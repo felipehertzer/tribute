@@ -10,7 +10,7 @@ class TributeMenuEvents<T extends {}> {
     this.removers = [];
   }
 
-  bind(menu: EventTarget) {
+  bind(_menu: EventTarget) {
     const menuContainerScrollEvent = this.debounce(
       () => {
         if (this.tribute.isActive) {
@@ -55,7 +55,7 @@ class TributeMenuEvents<T extends {}> {
     }
   }
 
-  unbind(menu: EventTarget) {
+  unbind(_menu: EventTarget) {
     for (const remover of this.removers) {
       remover();
     }

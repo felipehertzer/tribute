@@ -129,9 +129,9 @@ class TributeContext<T extends { disabled?: boolean }> implements ITributeContex
     }
     li.className = collection.itemClass;
     li.addEventListener('mousemove', (e: Event) => {
-      const [li, index] = this._findLiTarget(e.target);
+      const [_li, index] = this._findLiTarget(e.target);
       if ('movementY' in e && e.movementY !== 0 && index !== null && typeof index !== 'undefined') {
-        this.tribute.menu.setActiveLi(Number.parseInt(index));
+        this.tribute.menu.setActiveLi(Number.parseInt(index, 10));
       }
     });
     if (this.tribute.menu.selected === index) {

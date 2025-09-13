@@ -1,10 +1,10 @@
+import { isContentEditable, isNotContentEditable } from './helpers';
 import TributeContext from './TributeContext';
 import TributeEvents from './TributeEvents';
 import TributeMenu from './TributeMenu';
 import TributeMenuEvents from './TributeMenuEvents';
 import TributeRange from './TributeRange';
 import TributeSearch from './TributeSearch';
-import { isContentEditable, isNotContentEditable } from './helpers';
 import type {
   Collection,
   ITribute,
@@ -370,7 +370,7 @@ class Tribute<T extends {}> implements ITribute<T> {
   }
 
   selectItemAtIndex(index: string, originalEvent: Event) {
-    const _index = Number.parseInt(index);
+    const _index = Number.parseInt(index, 10);
     if (typeof _index !== 'number' || Number.isNaN(_index) || !this.current.filteredItems || !this.current.collection || !this.current.element) return;
 
     const item = this.current.filteredItems[_index];
@@ -403,7 +403,7 @@ class Tribute<T extends {}> implements ITribute<T> {
   }
 
   append(collectionIndex: string, newValues: [], replace?: boolean): void {
-    const index = Number.parseInt(collectionIndex);
+    const index = Number.parseInt(collectionIndex, 10);
     if (typeof index !== 'number') throw new Error('please provide an index for the collection to update.');
 
     const collection = this.collection[index];

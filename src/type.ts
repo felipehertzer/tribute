@@ -57,7 +57,7 @@ export type TriggerInfo = {
   mentionTriggerChar?: string;
 };
 
-export interface ITributeMenu<T extends {}> {
+export interface ITributeMenu<_T extends {}> {
   element: HTMLElement | null;
   activate(): void;
   deactivate(): void;

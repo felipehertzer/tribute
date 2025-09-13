@@ -175,7 +175,7 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
     return undefined;
   }
 
-  getContentEditableSelectedPath(context: ITributeContext<T>): SelectionInfo | undefined {
+  getContentEditableSelectedPath(_context: ITributeContext<T>): SelectionInfo | undefined {
     const sel = this.getWindowSelection();
     if (sel === null) return undefined;
 
@@ -435,7 +435,7 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
     };
   }
 
-  getTextAreaOrInputUnderlinePosition(element: HTMLInputElement | HTMLTextAreaElement, position: number, flipped?: unknown): Coordinate | undefined {
+  getTextAreaOrInputUnderlinePosition(element: HTMLInputElement | HTMLTextAreaElement, position: number, _flipped?: unknown): Coordinate | undefined {
     const properties = [
       'direction',
       'boxSizing',
@@ -599,7 +599,7 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
   }
 
   menu?: Node;
-  scrollIntoView(elem?: unknown) {
+  scrollIntoView(_elem?: unknown) {
     const reasonableBuffer = 20;
     let clientRect: DOMRect | undefined;
     const maxScrollDisplacement = 100;

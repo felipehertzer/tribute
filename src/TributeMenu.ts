@@ -96,7 +96,7 @@ class TributeMenu<T extends {}> implements ITributeMenu<T> {
 
     const selectClass = this.tribute.current.collection.selectClass;
     const lis = this.items;
-    const length = lis.length >>> 0;
+    const _length = lis.length >>> 0;
 
     if (index) {
       this.selected = index;

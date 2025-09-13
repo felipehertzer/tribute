@@ -26,9 +26,7 @@ describe('Tribute @mentions cases', () => {
     clearDom();
   });
 
-  // biome-ignore lint/complexity/noForEach: test code.
   ['text', 'contenteditable'].forEach((elementType) => {
-    // biome-ignore lint/complexity/noForEach: test code.
     ['@', '$('].forEach((trigger) => {
       it(`when values key is predefined array. For : ${elementType} / ${trigger}`, async () => {
         const input = createDomElement(elementType);
@@ -150,7 +148,6 @@ describe('Tribute autocomplete mode cases', () => {
     clearDom();
   });
 
-  // biome-ignore lint/complexity/noForEach: test code.
   ['text', 'contenteditable'].forEach((elementType) => {
     it(`when values key with autocompleteSeparator option. For : ${elementType}`, async () => {
       const input = createDomElement(elementType);
@@ -158,7 +155,7 @@ describe('Tribute autocomplete mode cases', () => {
       const collectionObject = {
         selectTemplate: (item) => item.original.value,
         autocompleteMode: true,
-        autocompleteSeparator: new RegExp(/\-|\+/),
+        autocompleteSeparator: new RegExp(/-|\+/),
         values: [
           { key: 'Jordan Humphreys', value: 'Jordan Humphreys', email: 'getstarted@zurb.com' },
           { key: 'Sir Walter Riley', value: 'Sir Walter Riley', email: 'getstarted+riley@zurb.com' },
@@ -186,7 +183,6 @@ describe('Tribute autocomplete mode cases', () => {
     });
   });
 
-  // biome-ignore lint/complexity/noForEach: test code.
   ['text', 'contenteditable'].forEach((elementType) => {
     it(`when values key is predefined array. For : ${elementType}`, async () => {
       const input = createDomElement(elementType);
@@ -230,7 +226,6 @@ describe('Tribute autocomplete mode cases', () => {
     });
   });
 
-  // biome-ignore lint/complexity/noForEach: test code.
   ['text', 'contenteditable'].forEach((elementType) => {
     it(`when values key is a function. For : ${elementType}`, async () => {
       const input = createDomElement(elementType);
@@ -309,7 +304,6 @@ describe('Tribute autocomplete mode cases', () => {
     });
   });
 
-  // biome-ignore lint/complexity/noForEach: test code.
   ['contenteditable'].forEach((elementType) => {
     it('should work with newlines', async () => {
       const input = createDomElement(elementType);
@@ -619,8 +613,8 @@ describe('Tribute menu positioning', () => {
     document.body.appendChild(bottomContent);
 
     const inputRect = input.getBoundingClientRect();
-    const inputX = inputRect.x;
-    const inputY = inputRect.y;
+    const _inputX = inputRect.x;
+    const _inputY = inputRect.y;
 
     const tribute = attachTribute(collectionObject, input.id);
     await fillIn(input, '@');
@@ -792,7 +786,7 @@ describe('Multi-char tests', () => {
       const tribute = attachTribute(collectionObject, input.id);
       await fillIn(input, '@random-text');
 
-      const popupList = document.querySelectorAll('.tribute-container > ul > li');
+      const _popupList = document.querySelectorAll('.tribute-container > ul > li');
       expect(called).to.be.true;
 
       detachTribute(tribute, input.id);
@@ -826,7 +820,7 @@ describe('Multi-char tests', () => {
       const tribute = attachTribute(collectionObject, input.id);
       await fillIn(input, '@random-text');
 
-      const popupList = document.querySelectorAll('.tribute-container > ul > li');
+      const _popupList = document.querySelectorAll('.tribute-container > ul > li');
       expect(called).to.be.true;
 
       detachTribute(tribute, input.id);
@@ -839,7 +833,6 @@ describe('Tribute loadingItemTemplate', () => {
     clearDom();
   });
 
-  // biome-ignore lint/complexity/noForEach: test code.
   ['text', 'contenteditable'].forEach((elementType) => {
     it(`Shows loading item template. For : ${elementType}`, async () => {
       const input = createDomElement(elementType);
@@ -899,7 +892,7 @@ describe('Tribute disabled items cases', () => {
       ],
     };
 
-    const tribute = attachTribute(collectionObject, input.id);
+    const _tribute = attachTribute(collectionObject, input.id);
     await fillIn(input, '@');
 
     const popupList = document.querySelectorAll('.tribute-container > ul > li');

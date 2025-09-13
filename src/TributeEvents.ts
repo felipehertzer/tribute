@@ -34,7 +34,7 @@ class TributeEvents<T extends {}> {
     );
   }
 
-  unbind(element: EventTarget) {
+  unbind(_element: EventTarget) {
     for (const remover of this.removers) {
       remover();
     }
@@ -58,7 +58,7 @@ class TributeEvents<T extends {}> {
   }
 
   input(event: Event) {
-    const element = event.currentTarget;
+    const _element = event.currentTarget;
     this.inputEvent = true;
     this.keyup(event);
   }
@@ -147,7 +147,7 @@ class TributeEvents<T extends {}> {
     }
   }
 
-  triggerChar(e: Event, el: HTMLElement, trigger: string) {
+  triggerChar(_e: Event, el: HTMLElement, trigger: string) {
     const tribute = this.tribute;
     tribute.current.trigger = trigger;
 
@@ -166,7 +166,7 @@ class TributeEvents<T extends {}> {
   get callbacks(): { [key in hotkeyType]: (e: Event, el: HTMLElement) => void } {
     if (!this._callbacks) {
       this._callbacks = {
-        enter: (e: Event, el: HTMLElement) => {
+        enter: (e: Event, _el: HTMLElement) => {
           // choose selection
           const filteredItems = this.tribute.current.filteredItems;
           if (this.tribute.isActive && filteredItems && filteredItems.length) {
@@ -183,7 +183,7 @@ class TributeEvents<T extends {}> {
             }, 0);
           }
         },
-        escape: (e: Event, el: HTMLElement) => {
+        escape: (e: Event, _el: HTMLElement) => {
           if (this.tribute.isActive) {
             e.preventDefault();
             e.stopPropagation();
@@ -208,7 +208,7 @@ class TributeEvents<T extends {}> {
             }
           }
         },
-        arrowup: (e: Event, el: HTMLElement) => {
+        arrowup: (e: Event, _el: HTMLElement) => {
           // navigate up ul
           if (this.tribute.isActive && this.tribute.current.filteredItems) {
             e.preventDefault();
@@ -218,7 +218,7 @@ class TributeEvents<T extends {}> {
             this.tribute.menu.up(count);
           }
         },
-        arrowdown: (e: Event, el: HTMLElement) => {
+        arrowdown: (e: Event, _el: HTMLElement) => {
           // navigate down ul
           if (this.tribute.isActive && this.tribute.current.filteredItems) {
             e.preventDefault();
@@ -228,7 +228,7 @@ class TributeEvents<T extends {}> {
             this.tribute.menu.down(count);
           }
         },
-        backspace: (e: Event, el: HTMLElement) => {
+        backspace: (_e: Event, el: HTMLElement) => {
           if (this.tribute.isActive) {
             if (this.tribute.current && this.tribute.current.mentionText.length < 1) {
               this.tribute.hideMenu();
