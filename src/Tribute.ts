@@ -20,6 +20,37 @@ import type {
   TributeTemplate,
 } from './type';
 
+const defaultConfig = {
+  values: null,
+  loadingItemTemplate: null,
+  iframe: null,
+  shadowRoot: null,
+  selectClass: 'highlight',
+  containerClass: 'tribute-container',
+  itemClass: '',
+  trigger: '@',
+  autocompleteMode: false,
+  autocompleteSeparator: /\s+/,
+  selectTemplate: null,
+  menuItemTemplate: null,
+  lookup: 'key',
+  fillAttr: 'value',
+  collection: null,
+  menuContainer: null,
+  noMatchTemplate: null,
+  requireLeadingSpace: true,
+  allowSpaces: false,
+  replaceTextSuffix: null,
+  positionMenu: true,
+  spaceSelectsMatch: false,
+  searchOpts: {},
+  menuItemLimit: null,
+  menuShowMinLength: 0,
+  closeOnScroll: false,
+  maxDisplayItems: null,
+  isBlocked: false,
+} as const;
+
 class Tribute<T extends {}> implements ITribute<T> {
   allowSpaces: boolean;
   autocompleteMode: boolean;
@@ -41,156 +72,112 @@ class Tribute<T extends {}> implements ITribute<T> {
   search: ITributeSearch<T>;
   current: ITributeContext<T>;
 
-  constructor({
-    values = null,
-    loadingItemTemplate = null,
-    iframe = null,
-    shadowRoot = null,
-    selectClass = 'highlight',
-    containerClass = 'tribute-container',
-    itemClass = '',
-    trigger = '@',
-    autocompleteMode = false,
-    autocompleteSeparator = /\s+/,
-    selectTemplate = null,
-    menuItemTemplate = null,
-    lookup = 'key',
-    fillAttr = 'value',
-    collection = null,
-    menuContainer = null,
-    noMatchTemplate = null,
-    requireLeadingSpace = true,
-    allowSpaces = false,
-    replaceTextSuffix = null,
-    positionMenu = true,
-    spaceSelectsMatch = false,
-    searchOpts = {},
-    menuItemLimit = null,
-    menuShowMinLength = 0,
-    closeOnScroll = false,
-    maxDisplayItems = null,
-    isBlocked = false,
-  }: TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>) {
+  constructor(args: Partial<TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>>) {
+    const config = {
+      ...defaultConfig,
+      ...args,
+    };
+
     this._isActive = false;
-    this.autocompleteMode = autocompleteMode;
-    this.autocompleteSeparator = autocompleteSeparator;
+    this.autocompleteMode = config.autocompleteMode;
+    this.autocompleteSeparator = config.autocompleteSeparator;
     this.current = new TributeContext(this);
     this.isActive = false;
-    this.menuContainer = menuContainer;
-    this.allowSpaces = allowSpaces;
-    this.replaceTextSuffix = replaceTextSuffix;
-    this.positionMenu = positionMenu;
+    this.menuContainer = config.menuContainer;
+    this.allowSpaces = config.allowSpaces;
+    this.replaceTextSuffix = config.replaceTextSuffix;
+    this.positionMenu = config.positionMenu;
     this.hasTrailingSpace = false;
-    this.spaceSelectsMatch = spaceSelectsMatch;
-    this.closeOnScroll = closeOnScroll;
+    this.spaceSelectsMatch = config.spaceSelectsMatch;
+    this.closeOnScroll = config.closeOnScroll;
     this.menu = new TributeMenu(this);
 
     if (this.autocompleteMode) {
-      trigger = '';
-      allowSpaces = false;
+      config.trigger = '';
+      config.allowSpaces = false;
     }
 
-    if (values) {
+    if (config.values) {
       this.collection = [
         {
           // symbol that starts the lookup
-          trigger: trigger,
+          trigger: config.trigger,
 
           // is it wrapped in an iframe
-          iframe: iframe,
+          iframe: config.iframe,
 
           // is it wrapped in a web component
-          shadowRoot: shadowRoot,
+          shadowRoot: config.shadowRoot,
 
           // class applied to selected item
-          selectClass: selectClass,
+          selectClass: config.selectClass,
 
           // class applied to the Container
-          containerClass: containerClass,
+          containerClass: config.containerClass,
 
           // class applied to each item
-          itemClass: itemClass,
+          itemClass: config.itemClass,
 
           // function called on select that retuns the content to insert
-          selectTemplate: selectTemplate ? selectTemplate.bind(this) : (item) => defaultSelectTemplate(this.current, item),
+          selectTemplate: config.selectTemplate ? config.selectTemplate.bind(this) : (item) => defaultSelectTemplate(this.current, item),
 
           // function called that returns content for an item
-          menuItemTemplate: (menuItemTemplate || defaultMenuItemTemplate).bind(this),
+          menuItemTemplate: (config.menuItemTemplate || defaultMenuItemTemplate).bind(this),
 
           // function called when menu is empty, disables hiding of menu.
-          noMatchTemplate: ((t) => {
-            if (typeof t === 'string') {
-              if (t.trim() === '') return null;
-              return t;
-            }
-            if (typeof t === 'function') {
-              return t.bind(this);
-            }
-
-            return noMatchTemplate || (() => '<li>No Match Found!</li>').bind(this);
-          })(noMatchTemplate),
+          noMatchTemplate: this.createNoMatchTemplate(config.noMatchTemplate, config),
 
           // column to search against in the object
-          lookup: lookup,
+          lookup: config.lookup,
 
           // column that contains the content to insert by default
-          fillAttr: fillAttr,
+          fillAttr: config.fillAttr,
 
           // array of objects or a function returning an array of objects
-          values: values,
+          values: config.values,
 
           // useful for when values is an async function
-          loadingItemTemplate: loadingItemTemplate,
+          loadingItemTemplate: config.loadingItemTemplate,
 
-          requireLeadingSpace: requireLeadingSpace,
+          requireLeadingSpace: config.requireLeadingSpace,
 
-          searchOpts: searchOpts,
+          searchOpts: config.searchOpts,
 
-          menuItemLimit: menuItemLimit,
+          menuItemLimit: config.menuItemLimit,
 
-          menuShowMinLength: menuShowMinLength,
+          menuShowMinLength: config.menuShowMinLength,
 
           // Fix for maximum number of items added to the input for the specific Collection
-          maxDisplayItems: maxDisplayItems,
+          maxDisplayItems: config.maxDisplayItems,
 
-          isBlocked: isBlocked,
+          isBlocked: config.isBlocked,
         },
       ];
-    } else if (collection) {
+    } else if (config.collection) {
       if (this.autocompleteMode) console.warn('Tribute in autocomplete mode does not work for collections');
-      this.collection = collection.map((item) => {
+      this.collection = config.collection.map((item) => {
         return {
-          trigger: item.trigger || trigger,
-          iframe: item.iframe || iframe,
-          selectClass: item.selectClass || selectClass,
-          containerClass: item.containerClass || containerClass,
-          itemClass: item.itemClass || itemClass,
+          trigger: item.trigger || config.trigger,
+          iframe: item.iframe || config.iframe,
+          selectClass: item.selectClass || config.selectClass,
+          containerClass: item.containerClass || config.containerClass,
+          itemClass: item.itemClass || config.itemClass,
           selectTemplate: item.selectTemplate ? item.selectTemplate.bind(this) : (item) => defaultSelectTemplate(this.current, item),
           menuItemTemplate: (item.menuItemTemplate || defaultMenuItemTemplate).bind(this),
           // function called when menu is empty, disables hiding of menu.
-          noMatchTemplate: ((t) => {
-            if (typeof t === 'string') {
-              if (t.trim() === '') return null;
-              return t;
-            }
-            if (typeof t === 'function') {
-              return t.bind(this);
-            }
-
-            return noMatchTemplate ?? (() => '<li>No Match Found!</li>').bind(this);
-          })(item.noMatchTemplate),
-          lookup: item.lookup || lookup,
-          fillAttr: item.fillAttr || fillAttr,
+          noMatchTemplate: this.createNoMatchTemplate(item.noMatchTemplate, config),
+          lookup: item.lookup || config.lookup,
+          fillAttr: item.fillAttr || config.fillAttr,
           values: item.values,
-          loadingItemTemplate: item.loadingItemTemplate,
-          requireLeadingSpace: item.requireLeadingSpace,
-          searchOpts: item.searchOpts || searchOpts,
-          menuItemLimit: item.menuItemLimit || menuItemLimit,
-          menuShowMinLength: item.menuShowMinLength || menuShowMinLength,
+          loadingItemTemplate: item.loadingItemTemplate || config.loadingItemTemplate,
+          requireLeadingSpace: item.requireLeadingSpace || config.requireLeadingSpace,
+          searchOpts: item.searchOpts || config.searchOpts,
+          menuItemLimit: item.menuItemLimit || config.menuItemLimit,
+          menuShowMinLength: item.menuShowMinLength || config.menuShowMinLength,
 
           // Set maximum number of items added to the input for the specific Collection
-          maxDisplayItems: item.maxDisplayItems || maxDisplayItems,
-          isBlocked: item.isBlocked || isBlocked,
+          maxDisplayItems: item.maxDisplayItems || config.maxDisplayItems,
+          isBlocked: item.isBlocked || config.isBlocked,
         };
       });
     } else {
@@ -201,6 +188,17 @@ class Tribute<T extends {}> implements ITribute<T> {
     this.events = new TributeEvents(this);
     this.menuEvents = new TributeMenuEvents(this);
     this.search = new TributeSearch(this);
+  }
+
+  private createNoMatchTemplate(t: (() => string) | string | null | undefined, config: TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>) {
+    if (typeof t === 'string') {
+      if (t.trim() === '') return null;
+      return t;
+    }
+    if (typeof t === 'function') {
+      return t.bind(this);
+    }
+    return config.noMatchTemplate ?? (() => '<li>No Match Found!</li>').bind(this);
   }
 
   get isActive(): boolean {
