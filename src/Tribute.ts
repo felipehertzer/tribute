@@ -73,7 +73,7 @@ class Tribute<T extends {}> implements ITribute<T> {
   current: ITributeContext<T>;
 
   constructor(args: Partial<TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>>) {
-    const config = {
+    const { values, collection, menuItemTemplate, noMatchTemplate, selectTemplate, ...config } = {
       ...defaultConfig,
       ...args,
     };
@@ -97,89 +97,31 @@ class Tribute<T extends {}> implements ITribute<T> {
       config.allowSpaces = false;
     }
 
-    if (config.values) {
+    if (values) {
       this.collection = [
         {
-          // symbol that starts the lookup
-          trigger: config.trigger,
-
-          // is it wrapped in an iframe
-          iframe: config.iframe,
-
-          // is it wrapped in a web component
-          shadowRoot: config.shadowRoot,
-
-          // class applied to selected item
-          selectClass: config.selectClass,
-
-          // class applied to the Container
-          containerClass: config.containerClass,
-
-          // class applied to each item
-          itemClass: config.itemClass,
+          ...config,
+          values: values,
 
           // function called on select that retuns the content to insert
-          selectTemplate: config.selectTemplate ? config.selectTemplate.bind(this) : (item) => defaultSelectTemplate(this.current, item),
+          selectTemplate: selectTemplate ? selectTemplate.bind(this) : (item) => defaultSelectTemplate(this.current, item),
 
           // function called that returns content for an item
-          menuItemTemplate: (config.menuItemTemplate || defaultMenuItemTemplate).bind(this),
+          menuItemTemplate: (menuItemTemplate || defaultMenuItemTemplate).bind(this),
 
           // function called when menu is empty, disables hiding of menu.
-          noMatchTemplate: this.createNoMatchTemplate(config.noMatchTemplate, config),
-
-          // column to search against in the object
-          lookup: config.lookup,
-
-          // column that contains the content to insert by default
-          fillAttr: config.fillAttr,
-
-          // array of objects or a function returning an array of objects
-          values: config.values,
-
-          // useful for when values is an async function
-          loadingItemTemplate: config.loadingItemTemplate,
-
-          requireLeadingSpace: config.requireLeadingSpace,
-
-          searchOpts: config.searchOpts,
-
-          menuItemLimit: config.menuItemLimit,
-
-          menuShowMinLength: config.menuShowMinLength,
-
-          // Fix for maximum number of items added to the input for the specific Collection
-          maxDisplayItems: config.maxDisplayItems,
-
-          isBlocked: config.isBlocked,
+          noMatchTemplate: this.createNoMatchTemplate(noMatchTemplate, noMatchTemplate),
         },
       ];
-    } else if (config.collection) {
+    } else if (collection) {
       if (this.autocompleteMode) console.warn('Tribute in autocomplete mode does not work for collections');
-      this.collection = config.collection.map((item) => {
-        return {
-          trigger: item.trigger || config.trigger,
-          iframe: item.iframe || config.iframe,
-          selectClass: item.selectClass || config.selectClass,
-          containerClass: item.containerClass || config.containerClass,
-          itemClass: item.itemClass || config.itemClass,
-          selectTemplate: item.selectTemplate ? item.selectTemplate.bind(this) : (item) => defaultSelectTemplate(this.current, item),
-          menuItemTemplate: (item.menuItemTemplate || defaultMenuItemTemplate).bind(this),
-          // function called when menu is empty, disables hiding of menu.
-          noMatchTemplate: this.createNoMatchTemplate(item.noMatchTemplate, config),
-          lookup: item.lookup || config.lookup,
-          fillAttr: item.fillAttr || config.fillAttr,
-          values: item.values,
-          loadingItemTemplate: item.loadingItemTemplate || config.loadingItemTemplate,
-          requireLeadingSpace: item.requireLeadingSpace || config.requireLeadingSpace,
-          searchOpts: item.searchOpts || config.searchOpts,
-          menuItemLimit: item.menuItemLimit || config.menuItemLimit,
-          menuShowMinLength: item.menuShowMinLength || config.menuShowMinLength,
-
-          // Set maximum number of items added to the input for the specific Collection
-          maxDisplayItems: item.maxDisplayItems || config.maxDisplayItems,
-          isBlocked: item.isBlocked || config.isBlocked,
-        };
-      });
+      this.collection = collection.map((item) => ({
+        ...config,
+        ...item,
+        selectTemplate: item.selectTemplate ? item.selectTemplate.bind(this) : (item) => defaultSelectTemplate(this.current, item),
+        menuItemTemplate: (item.menuItemTemplate || defaultMenuItemTemplate).bind(this),
+        noMatchTemplate: this.createNoMatchTemplate(item.noMatchTemplate, noMatchTemplate),
+      }));
     } else {
       throw new Error('[Tribute] No collection specified.');
     }
@@ -190,15 +132,16 @@ class Tribute<T extends {}> implements ITribute<T> {
     this.search = new TributeSearch(this);
   }
 
-  private createNoMatchTemplate(t: (() => string) | string | null | undefined, config: TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>) {
-    if (typeof t === 'string') {
-      if (t.trim() === '') return null;
-      return t;
+  private createNoMatchTemplate(template: TributeTemplate<T>['noMatchTemplate'], defaultNoMatchTemplate: TributeTemplate<T>['noMatchTemplate']) {
+    if (typeof template === 'string') {
+      return template.trim() === '' ? null : template;
     }
-    if (typeof t === 'function') {
-      return t.bind(this);
+
+    if (typeof template === 'function') {
+      return template.bind(this);
     }
-    return config.noMatchTemplate ?? (() => '<li>No Match Found!</li>').bind(this);
+
+    return defaultNoMatchTemplate ?? (() => '<li>No Match Found!</li>').bind(this);
   }
 
   get isActive(): boolean {
@@ -370,6 +313,8 @@ class Tribute<T extends {}> implements ITribute<T> {
   selectItemAtIndex(index: string, originalEvent: Event) {
     const _index = Number.parseInt(index, 10);
     if (typeof _index !== 'number' || Number.isNaN(_index) || !this.current.filteredItems || !this.current.collection || !this.current.element) return;
+
+    if (this.current.collection.selectTemplate === null) return;
 
     const item = this.current.filteredItems[_index];
     const content = this.current.collection.selectTemplate(item);

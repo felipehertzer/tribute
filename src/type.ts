@@ -1,4 +1,4 @@
-export type Collection<T extends {}> = TributeCollection<T> & TributeTemplateWithDefault<T>;
+export type Collection<T extends {}> = TributeCollection<T> & TributeTemplate<T>;
 
 export interface ITribute<T extends {}> {
   autocompleteMode: boolean;
@@ -179,19 +179,7 @@ export type TributeCollection<T extends {}> = {
 
 export type TributeTemplate<T extends {}> = {
   // function called on select that returns the content to insert
-  selectTemplate?: ((item: TributeItem<T> | undefined) => string | HTMLElement) | null;
-
-  // template for displaying item in menu
-  menuItemTemplate?: ((item: TributeItem<T>) => string | HTMLElement) | null;
-
-  // template for when no match is found (optional),
-  // If no template is provided, menu is hidden.
-  noMatchTemplate?: (() => string) | string | null;
-};
-
-export type TributeTemplateWithDefault<T extends {}> = {
-  // function called on select that returns the content to insert
-  selectTemplate: (item: TributeItem<T> | undefined) => string | HTMLElement;
+  selectTemplate: ((item: TributeItem<T> | undefined) => string | HTMLElement) | null;
 
   // template for displaying item in menu
   menuItemTemplate: (item: TributeItem<T>) => string | HTMLElement;
