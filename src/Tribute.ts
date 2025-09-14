@@ -1,4 +1,4 @@
-import { isContentEditable } from './helpers';
+import { isContentEditable, isKeyOfObject } from './helpers';
 import TributeContext from './TributeContext';
 import TributeEvents from './TributeEvents';
 import TributeMenu from './TributeMenu';
@@ -335,18 +335,19 @@ class Tribute<T extends {}> implements ITribute<T> {
 }
 
 function defaultSelectTemplate<T extends {}>(current: ITributeContext<T> | undefined, item?: TributeItem<T>): string {
-  if (typeof current?.collection === 'undefined') throw new Error('current Collection is undfined');
-  if (typeof item === 'undefined') return `${current.collection.trigger}${current.mentionText}`;
-
-  // FIXME: should not use 'as'
-  const original = item.original as { [key: string]: string };
-  const result = original[current.collection.fillAttr];
-
-  if (current.element && isContentEditable(current.element)) {
-    return `<span class="tribute-mention">${current.collection.trigger}${result}</span>`;
+  if (!current?.collection) {
+    throw new Error('current Collection is undefined');
   }
 
-  return `${current.collection.trigger}${result}`;
+  const result = isKeyOfObject(current.collection.fillAttr, item?.original)
+    ? (item?.original?.[current.collection.fillAttr] ?? current.mentionText)
+    : current.mentionText;
+  const trigger = current.collection.trigger ?? '';
+
+  if (current.element && isContentEditable(current.element)) {
+    return `<span class="tribute-mention">${trigger}${result}</span>`;
+  }
+  return `${trigger}${result}`;
 }
 
 function defaultMenuItemTemplate<T extends {}>(matchItem: TributeItem<T>) {

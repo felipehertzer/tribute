@@ -10,3 +10,9 @@ export function isContentEditable(element: HTMLElement) {
 export function isNotContentEditable(element: unknown): element is HTMLInputElement | HTMLTextAreaElement {
   return element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement;
 }
+
+export function isKeyOfObject<T extends object>(key: string | number | symbol, obj: T | undefined): key is keyof T {
+  if (!obj) return false;
+
+  return key in obj;
+}
