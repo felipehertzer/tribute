@@ -16,3 +16,17 @@ export function isKeyOfObject<T extends object>(key: string | number | symbol, o
 
   return key in obj;
 }
+
+export function debounce<F extends (...args: unknown[]) => void>(func: F, wait: number, immediate = false) {
+  let timeout: ReturnType<typeof setTimeout> | null;
+  return function (this: ThisParameterType<F>, ...args: Parameters<F>) {
+    const later = () => {
+      timeout = null;
+      if (!immediate) func.apply(this, args);
+    };
+    const callNow = immediate && !timeout;
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+    if (callNow) func.apply(this, args);
+  };
+}
