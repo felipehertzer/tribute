@@ -1,6 +1,6 @@
 {
-  "name": "@redmine-ui/tributejs",
-  "version": "6.1.2",
+  "name": "@felipehertzer/tributejs",
+  "version": "6.1.3",
   "description": "Native ES6 @mentions",
   "exports": {
     ".": {
@@ -37,7 +37,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/redmine-ui/tribute.git"
+    "url": "https://github.com/felipehertzer/tribute.git"
   },
   "scripts": {
     "build": "rollup -c",
