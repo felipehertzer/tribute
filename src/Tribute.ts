@@ -51,6 +51,18 @@ const defaultConfig = {
   isBlocked: false,
 } as const;
 
+type Compact<T> = {
+  [P in keyof T]?: Exclude<T[P], undefined>;
+};
+
+function compactObject<T extends Record<string, unknown>>(args: T): Compact<T> {
+  const entries = Object.entries(args) as [keyof T, T[keyof T]][];
+  const filteredEntries = entries.filter(([, value]) => value !== undefined);
+  const compactArgs = Object.assign({}, ...filteredEntries.map(([k, v]) => ({ [k]: v }))) as Compact<T>;
+
+  return compactArgs;
+}
+
 class Tribute<T extends {}> implements ITribute<T> {
   allowSpaces: boolean;
   autocompleteMode: boolean;
@@ -73,9 +85,11 @@ class Tribute<T extends {}> implements ITribute<T> {
   current: ITributeContext<T>;
 
   constructor(args: Partial<TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>>) {
+    const compactArgs: Compact<Partial<TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>>> = compactObject(args);
+
     const { values, collection, menuItemTemplate, noMatchTemplate, selectTemplate, ...config } = {
       ...defaultConfig,
-      ...args,
+      ...compactArgs,
     };
 
     this._isActive = false;
