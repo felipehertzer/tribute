@@ -87,7 +87,7 @@ class Tribute<T extends {}> implements ITribute<T> {
   constructor(args: Partial<TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>>) {
     const compactArgs: Compact<Partial<TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>>> = compactObject(args);
 
-    const { values, collection, menuItemTemplate, noMatchTemplate, selectTemplate, ...config } = {
+    const config = {
       ...defaultConfig,
       ...compactArgs,
     };
@@ -111,39 +111,40 @@ class Tribute<T extends {}> implements ITribute<T> {
       config.allowSpaces = false;
     }
 
+    this.collection = this.buildCollection(config);
+    this.range = new TributeRange(this);
+    this.events = new TributeEvents(this);
+    this.menuEvents = new TributeMenuEvents(this);
+    this.search = new TributeSearch(this);
+  }
+
+  private buildCollection(config: TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>) {
+    const { values, collection, menuItemTemplate, noMatchTemplate, selectTemplate, ...collectionConfig } = config;
+
     if (values) {
-      this.collection = [
+      return [
         {
-          ...config,
+          ...collectionConfig,
           values: values,
-
-          // function called on select that retuns the content to insert
-          selectTemplate: selectTemplate ? selectTemplate.bind(this) : (item) => defaultSelectTemplate(this.current, item),
-
-          // function called that returns content for an item
+          selectTemplate: selectTemplate ? selectTemplate.bind(this) : (item?: TributeItem<T>) => defaultSelectTemplate(this.current, item),
           menuItemTemplate: (menuItemTemplate || defaultMenuItemTemplate).bind(this),
-
-          // function called when menu is empty, disables hiding of menu.
           noMatchTemplate: this.createNoMatchTemplate(noMatchTemplate, noMatchTemplate),
         },
       ];
-    } else if (collection) {
+    }
+
+    if (collection) {
       if (this.autocompleteMode) console.warn('Tribute in autocomplete mode does not work for collections');
-      this.collection = collection.map((item) => ({
-        ...config,
+      return collection.map((item) => ({
+        ...collectionConfig,
         ...item,
-        selectTemplate: item.selectTemplate ? item.selectTemplate.bind(this) : (item) => defaultSelectTemplate(this.current, item),
+        selectTemplate: item.selectTemplate ? item.selectTemplate.bind(this) : (item?: TributeItem<T>) => defaultSelectTemplate(this.current, item),
         menuItemTemplate: (item.menuItemTemplate || defaultMenuItemTemplate).bind(this),
         noMatchTemplate: this.createNoMatchTemplate(item.noMatchTemplate, noMatchTemplate),
       }));
     } else {
       throw new Error('[Tribute] No collection specified.');
     }
-
-    this.range = new TributeRange(this);
-    this.events = new TributeEvents(this);
-    this.menuEvents = new TributeMenuEvents(this);
-    this.search = new TributeSearch(this);
   }
 
   private createNoMatchTemplate(template: TributeTemplate<T>['noMatchTemplate'], defaultNoMatchTemplate: TributeTemplate<T>['noMatchTemplate']) {

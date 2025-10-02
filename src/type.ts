@@ -182,7 +182,7 @@ export type TributeTemplate<T extends {}> = {
   selectTemplate: ((item: TributeItem<T> | undefined) => string | HTMLElement) | null;
 
   // template for displaying item in menu
-  menuItemTemplate: (item: TributeItem<T>) => string | HTMLElement;
+  menuItemTemplate: ((item: TributeItem<T>) => string | HTMLElement) | null;
 
   // template for when no match is found (optional),
   // If no template is provided, menu is hidden.

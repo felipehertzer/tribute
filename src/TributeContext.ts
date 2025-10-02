@@ -138,7 +138,7 @@ class TributeContext<T extends { disabled?: boolean }> implements ITributeContex
       li.classList.add(collection.selectClass);
     }
     // remove all content in the li and append the content of menuItemTemplate
-    const menuItemDomOrString = collection.menuItemTemplate(item);
+    const menuItemDomOrString = collection.menuItemTemplate !== null ? collection.menuItemTemplate(item) : '';
     if (menuItemDomOrString instanceof Element) {
       li.innerHTML = '';
       li.appendChild(menuItemDomOrString);
