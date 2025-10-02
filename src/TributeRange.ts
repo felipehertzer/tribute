@@ -23,9 +23,23 @@ type Trigger = {
 
 class TributeRange<T extends {}> implements ITributeRange<T> {
   tribute: ITribute<T>;
+  private readonly triggerInfoParser: TriggerInfoParser<T>;
 
   constructor(tribute: ITribute<T>) {
     this.tribute = tribute;
+    this.triggerInfoParser = tribute.autocompleteMode
+      ? new AutocompleteTriggerInfoParser(this, tribute.autocompleteSeparator)
+      : new NonAutocompleteTriggerInfoParser(this, tribute);
+  }
+
+  getTriggerInfo(
+    menuAlreadyActive: boolean,
+    hasTrailingSpace: boolean,
+    requireLeadingSpace: boolean,
+    allowSpaces: boolean,
+    isAutocomplete: boolean,
+  ): TriggerInfo | undefined {
+    return this.triggerInfoParser.getTriggerInfo(menuAlreadyActive, hasTrailingSpace, requireLeadingSpace, allowSpaces);
   }
 
   getDocument() {
@@ -43,7 +57,7 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
 
   positionMenuAtCaret(scrollTo: boolean) {
     const context = this.tribute.current;
-    const info = this.getTriggerInfo(false, this.tribute.hasTrailingSpace, true, this.tribute.allowSpaces, this.tribute.autocompleteMode);
+    const info = this.triggerInfoParser.getTriggerInfo(false, this.tribute.hasTrailingSpace, true, this.tribute.allowSpaces);
 
     if (typeof context?.element === 'undefined' || typeof info === 'undefined') return;
 
@@ -65,7 +79,7 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
   }
 
   replaceTriggerText(text: string | HTMLElement, requireLeadingSpace: boolean, hasTrailingSpace: boolean, originalEvent: Event, item: TributeItem<T>) {
-    const info = this.getTriggerInfo(true, hasTrailingSpace, requireLeadingSpace, this.tribute.allowSpaces, this.tribute.autocompleteMode);
+    const info = this.triggerInfoParser.getTriggerInfo(true, hasTrailingSpace, requireLeadingSpace, this.tribute.allowSpaces);
     const context = this.tribute.current;
 
     if (typeof context?.element === 'undefined' || typeof info === 'undefined') return;
@@ -109,6 +123,25 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
 
     context.element.dispatchEvent(new CustomEvent('input', { bubbles: true }));
     context.element.dispatchEvent(replaceEvent);
+  }
+
+  getSelectionInfo(): SelectionInfo | undefined {
+    const context = this.tribute.current;
+    if (typeof context.element === 'undefined') return undefined;
+
+    if (isContentEditable(context.element)) {
+      const selectionInfo = this.getContentEditableSelectedPath(context);
+      if (selectionInfo) {
+        return {
+          selected: selectionInfo.selected,
+          path: selectionInfo.path,
+          offset: selectionInfo.offset,
+        };
+      }
+    } else {
+      return { selected: context.element };
+    }
+    return undefined;
   }
 
   pasteHtml(htmlOrElem: string | HTMLElement, startPos: number, endPos: number): void {
@@ -240,167 +273,6 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
     }
 
     return text;
-  }
-
-  getLastWordInText(text: string) {
-    let wordsArray: string[] | undefined;
-    if (this.tribute.autocompleteMode) {
-      if (this.tribute.autocompleteSeparator) {
-        wordsArray = text.split(this.tribute.autocompleteSeparator);
-      } else {
-        wordsArray = [text];
-      }
-    } else {
-      wordsArray = text.split(/\s+/);
-    }
-    const wordsCount = wordsArray.length - 1;
-    return wordsArray[wordsCount];
-  }
-
-  getTriggerInfo(
-    menuAlreadyActive: boolean,
-    hasTrailingSpace: boolean,
-    requireLeadingSpace: boolean,
-    allowSpaces: boolean,
-    isAutocomplete: boolean,
-  ): TriggerInfo | undefined {
-    const context = this.tribute.current;
-    const selectionInfo = this._getSelectionInfo(context);
-    const effectiveRange = this.getTextPrecedingCurrentSelection();
-
-    if (isAutocomplete && typeof selectionInfo !== 'undefined' && typeof effectiveRange !== 'undefined') {
-      return this._getTriggerInfoWithAutocomplete(selectionInfo, effectiveRange);
-    }
-
-    if (effectiveRange === undefined || effectiveRange === null) return;
-
-    const trigger = this._getTrigger(requireLeadingSpace, effectiveRange);
-
-    if (trigger) {
-      return this._getTriggerInfoNonAutocomplete(menuAlreadyActive, hasTrailingSpace, allowSpaces, effectiveRange, trigger, selectionInfo);
-    }
-
-    return undefined;
-  }
-
-  _getSelectionInfo(context: ITributeContext<T>): SelectionInfo | undefined {
-    if (typeof context.element === 'undefined') return undefined;
-
-    if (isContentEditable(context.element)) {
-      const selectionInfo = this.getContentEditableSelectedPath(context);
-      if (selectionInfo) {
-        return {
-          selected: selectionInfo.selected,
-          path: selectionInfo.path,
-          offset: selectionInfo.offset,
-        };
-      }
-    } else {
-      return { selected: context.element };
-    }
-    return undefined;
-  }
-
-  _getTriggerInfoWithAutocomplete(selectionInfo: SelectionInfo, effectiveRange: string) {
-    const lastWordOfEffectiveRange = this.getLastWordInText(effectiveRange);
-
-    return {
-      mentionPosition: effectiveRange.length - (lastWordOfEffectiveRange || '').length,
-      mentionText: lastWordOfEffectiveRange,
-      mentionSelectedElement: selectionInfo.selected,
-      mentionSelectedPath: selectionInfo.path,
-      mentionSelectedOffset: selectionInfo.offset,
-    };
-  }
-
-  _getTrigger(requireLeadingSpace: boolean, effectiveRange: string): Trigger | undefined {
-    let mostRecentTriggerCharPos = -1;
-    let triggerChar: string | undefined;
-    let _requireLeadingSpace: boolean | undefined = requireLeadingSpace;
-
-    for (const config of this.tribute.collection) {
-      const c = config.trigger;
-      const idx = config.requireLeadingSpace ? this.lastIndexWithLeadingSpace(effectiveRange, c) : effectiveRange.lastIndexOf(c);
-
-      if (idx > mostRecentTriggerCharPos) {
-        mostRecentTriggerCharPos = idx;
-        triggerChar = c;
-        _requireLeadingSpace = config.requireLeadingSpace;
-      }
-    }
-
-    if (
-      typeof triggerChar !== 'undefined' &&
-      mostRecentTriggerCharPos >= 0 &&
-      (mostRecentTriggerCharPos === 0 || !_requireLeadingSpace || /\s/.test(effectiveRange.substring(mostRecentTriggerCharPos - 1, mostRecentTriggerCharPos)))
-    ) {
-      return {
-        mostRecentTriggerCharPos,
-        triggerChar,
-        requireLeadingSpace: !!_requireLeadingSpace,
-      };
-    }
-    return undefined;
-  }
-
-  _getTriggerInfoNonAutocomplete(
-    menuAlreadyActive: boolean,
-    hasTrailingSpace: boolean,
-    allowSpaces: boolean,
-    effectiveRange: string,
-    trigger: Trigger,
-    selectionInfo?: SelectionInfo,
-  ) {
-    let currentTriggerSnippet = effectiveRange.substring(trigger.mostRecentTriggerCharPos + trigger.triggerChar.length, effectiveRange.length);
-
-    trigger.triggerChar = effectiveRange.substring(trigger.mostRecentTriggerCharPos, trigger.mostRecentTriggerCharPos + trigger.triggerChar.length);
-    const firstSnippetChar = currentTriggerSnippet.substring(0, 1);
-    const leadingSpace = currentTriggerSnippet.length > 0 && (firstSnippetChar === ' ' || firstSnippetChar === '\xA0');
-    if (hasTrailingSpace) {
-      currentTriggerSnippet = currentTriggerSnippet.trim();
-    }
-
-    const regex = allowSpaces ? /[^\S ]/g : /[\xA0\s]/g;
-
-    this.tribute.hasTrailingSpace = regex.test(currentTriggerSnippet);
-
-    if (!leadingSpace && (menuAlreadyActive || !regex.test(currentTriggerSnippet))) {
-      return {
-        mentionPosition: trigger.mostRecentTriggerCharPos,
-        mentionText: currentTriggerSnippet,
-        mentionSelectedElement: selectionInfo?.selected,
-        mentionSelectedPath: selectionInfo?.path,
-        mentionSelectedOffset: selectionInfo?.offset,
-        mentionTriggerChar: trigger.triggerChar,
-      };
-    }
-    return undefined;
-  }
-
-  lastIndexWithLeadingSpace(str: string, trigger: string) {
-    const reversedStr = str.split('').reverse().join('');
-    let index = -1;
-
-    for (let cidx = 0, len = str.length; cidx < len; cidx++) {
-      const firstChar = cidx === str.length - 1;
-      const rev = reversedStr[cidx + 1];
-      const leadingSpace = typeof rev === 'undefined' ? false : /\s/.test(rev);
-
-      let match = true;
-      for (let triggerIdx = trigger.length - 1; triggerIdx >= 0; triggerIdx--) {
-        if (trigger[triggerIdx] !== reversedStr[cidx - triggerIdx]) {
-          match = false;
-          break;
-        }
-      }
-
-      if (match && (firstChar || leadingSpace)) {
-        index = str.length - 1 - cidx;
-        break;
-      }
-    }
-
-    return index;
   }
 
   isMenuOffScreen(coordinates: Coordinate, menuDimensions: { width: number; height: number }) {
@@ -640,6 +512,163 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
 
       window.scrollTo(0, targetY);
     }
+  }
+}
+
+interface TriggerInfoParser<T extends {}> {
+  getTriggerInfo(menuAlreadyActive: boolean, hasTrailingSpace: boolean, requireLeadingSpace: boolean, allowSpaces: boolean): TriggerInfo | undefined;
+}
+
+class AutocompleteTriggerInfoParser<T extends {}> implements TriggerInfoParser<T> {
+  private readonly range;
+  private readonly separator;
+  constructor(range: TributeRange<T>, separator: RegExp | null) {
+    this.range = range;
+    this.separator = separator;
+  }
+
+  getTriggerInfo(menuAlreadyActive: boolean, hasTrailingSpace: boolean, requireLeadingSpace: boolean, allowSpaces: boolean): TriggerInfo | undefined {
+    const selectionInfo = this.range.getSelectionInfo();
+    const effectiveRange = this.range.getTextPrecedingCurrentSelection();
+
+    if (typeof selectionInfo !== 'undefined' && typeof effectiveRange !== 'undefined') {
+      return this._getTriggerInfo(selectionInfo, effectiveRange);
+    }
+    return undefined;
+  }
+
+  private _getTriggerInfo(selectionInfo: SelectionInfo, effectiveRange: string) {
+    const lastWordOfEffectiveRange = this.getLastWordInText(effectiveRange);
+
+    return {
+      mentionPosition: effectiveRange.length - (lastWordOfEffectiveRange || '').length,
+      mentionText: lastWordOfEffectiveRange,
+      mentionSelectedElement: selectionInfo.selected,
+      mentionSelectedPath: selectionInfo.path,
+      mentionSelectedOffset: selectionInfo.offset,
+    };
+  }
+
+  private getLastWordInText(text: string) {
+    let wordsArray: string[] | undefined;
+    if (this.separator !== null) {
+      wordsArray = text.split(this.separator);
+    } else {
+      wordsArray = [text];
+    }
+    const wordsCount = wordsArray.length - 1;
+    return wordsArray[wordsCount];
+  }
+}
+
+class NonAutocompleteTriggerInfoParser<T extends {}> implements TriggerInfoParser<T> {
+  private readonly range;
+  private readonly tribute;
+  constructor(range: TributeRange<T>, tribute: ITribute<T>) {
+    this.range = range;
+    this.tribute = tribute;
+  }
+
+  getTriggerInfo(menuAlreadyActive: boolean, hasTrailingSpace: boolean, requireLeadingSpace: boolean, allowSpaces: boolean): TriggerInfo | undefined {
+    const selectionInfo = this.range.getSelectionInfo();
+    const effectiveRange = this.range.getTextPrecedingCurrentSelection();
+    if (effectiveRange === undefined || effectiveRange === null) return undefined;
+
+    const trigger = this._getTrigger(requireLeadingSpace, effectiveRange);
+    if (trigger) {
+      return this._getTriggerInfo(menuAlreadyActive, hasTrailingSpace, allowSpaces, effectiveRange, trigger, selectionInfo);
+    }
+    return undefined;
+  }
+
+  private _getTrigger(requireLeadingSpace: boolean, effectiveRange: string): Trigger | undefined {
+    let mostRecentTriggerCharPos = -1;
+    let triggerChar: string | undefined;
+    let _requireLeadingSpace: boolean | undefined = requireLeadingSpace;
+
+    for (const config of this.tribute.collection) {
+      const c = config.trigger;
+      const idx = config.requireLeadingSpace ? this.lastIndexWithLeadingSpace(effectiveRange, c) : effectiveRange.lastIndexOf(c);
+
+      if (idx > mostRecentTriggerCharPos) {
+        mostRecentTriggerCharPos = idx;
+        triggerChar = c;
+        _requireLeadingSpace = config.requireLeadingSpace;
+      }
+    }
+
+    if (
+      typeof triggerChar !== 'undefined' &&
+      mostRecentTriggerCharPos >= 0 &&
+      (mostRecentTriggerCharPos === 0 || !_requireLeadingSpace || /\s/.test(effectiveRange.substring(mostRecentTriggerCharPos - 1, mostRecentTriggerCharPos)))
+    ) {
+      return {
+        mostRecentTriggerCharPos,
+        triggerChar,
+        requireLeadingSpace: !!_requireLeadingSpace,
+      };
+    }
+    return undefined;
+  }
+
+  private lastIndexWithLeadingSpace(str: string, trigger: string) {
+    const reversedStr = str.split('').reverse().join('');
+    let index = -1;
+
+    for (let cidx = 0, len = str.length; cidx < len; cidx++) {
+      const firstChar = cidx === str.length - 1;
+      const rev = reversedStr[cidx + 1];
+      const leadingSpace = typeof rev === 'undefined' ? false : /\s/.test(rev);
+
+      let match = true;
+      for (let triggerIdx = trigger.length - 1; triggerIdx >= 0; triggerIdx--) {
+        if (trigger[triggerIdx] !== reversedStr[cidx - triggerIdx]) {
+          match = false;
+          break;
+        }
+      }
+
+      if (match && (firstChar || leadingSpace)) {
+        index = str.length - 1 - cidx;
+        break;
+      }
+    }
+
+    return index;
+  }
+
+  private _getTriggerInfo(
+    menuAlreadyActive: boolean,
+    hasTrailingSpace: boolean,
+    allowSpaces: boolean,
+    effectiveRange: string,
+    trigger: Trigger,
+    selectionInfo?: SelectionInfo,
+  ) {
+    let currentTriggerSnippet = effectiveRange.substring(trigger.mostRecentTriggerCharPos + trigger.triggerChar.length, effectiveRange.length);
+
+    trigger.triggerChar = effectiveRange.substring(trigger.mostRecentTriggerCharPos, trigger.mostRecentTriggerCharPos + trigger.triggerChar.length);
+    const firstSnippetChar = currentTriggerSnippet.substring(0, 1);
+    const leadingSpace = currentTriggerSnippet.length > 0 && (firstSnippetChar === ' ' || firstSnippetChar === '\xA0');
+    if (hasTrailingSpace) {
+      currentTriggerSnippet = currentTriggerSnippet.trim();
+    }
+
+    const regex = allowSpaces ? /[^\S ]/g : /[\xA0\s]/g;
+
+    this.tribute.hasTrailingSpace = regex.test(currentTriggerSnippet);
+
+    if (!leadingSpace && (menuAlreadyActive || !regex.test(currentTriggerSnippet))) {
+      return {
+        mentionPosition: trigger.mostRecentTriggerCharPos,
+        mentionText: currentTriggerSnippet,
+        mentionSelectedElement: selectionInfo?.selected,
+        mentionSelectedPath: selectionInfo?.path,
+        mentionSelectedOffset: selectionInfo?.offset,
+        mentionTriggerChar: trigger.triggerChar,
+      };
+    }
+    return undefined;
   }
 }
 
