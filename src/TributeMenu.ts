@@ -1,9 +1,13 @@
-import type { Coordinate, ITribute, ITributeMenu } from './type';
+import { addHandler } from './helpers';
+import type { Collection, Coordinate, ITribute, ITributeMenu, TributeItem } from './type';
 
-class TributeMenu<T extends {}> implements ITributeMenu<T> {
+class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
   element: HTMLElement | null;
   selected: number;
   tribute: ITribute<T>;
+
+  private ul?: HTMLElement;
+  private remover?: () => void;
 
   constructor(tribute: ITribute<T>) {
     this.tribute = tribute;
@@ -13,9 +17,9 @@ class TributeMenu<T extends {}> implements ITributeMenu<T> {
 
   create(doc: Document, containerClass: string): HTMLElement {
     const wrapper = doc.createElement('div');
-    const ul = doc.createElement('ul');
+    this.ul = doc.createElement('ul');
     wrapper.className = containerClass;
-    wrapper.appendChild(ul);
+    wrapper.appendChild(this.ul);
 
     this.element = this.tribute.menuContainer ? this.tribute.menuContainer.appendChild(wrapper) : doc.body.appendChild(wrapper);
     return this.element;
@@ -180,6 +184,87 @@ class TributeMenu<T extends {}> implements ITributeMenu<T> {
     this.element.style.cssText = 'display: none;';
 
     return dimensions;
+  }
+
+  render(items: TributeItem<T>[], collection: Collection<T>) {
+    if (this.ul === undefined) throw new Error('No ul element in the Menu');
+    if (!items.length) {
+      return this._handleNoItem(this.ul, collection);
+    } else {
+      return this._renderMenu(items, this.ul, collection);
+    }
+  }
+
+  _handleNoItem(ul: HTMLElement, collection: Collection<T>) {
+    if (!this.element) throw new Error('element is empty');
+
+    const noMatchEvent = new CustomEvent('tribute-no-match', {
+      detail: this.element,
+    });
+    this.element.dispatchEvent(noMatchEvent);
+    if ((typeof collection.noMatchTemplate === 'function' && !collection.noMatchTemplate()) || !collection.noMatchTemplate) {
+      this.tribute.hideMenu();
+    } else {
+      ul.innerHTML = typeof collection.noMatchTemplate === 'function' ? collection.noMatchTemplate() : collection.noMatchTemplate;
+
+      return true;
+    }
+    return false;
+  }
+
+  _renderMenu(items: TributeItem<T>[], ul: HTMLElement, collection: Collection<T>) {
+    ul.innerHTML = '';
+    const doc = this.tribute.range.getDocument();
+    const fragment = doc.createDocumentFragment();
+
+    this.selected = items.findIndex((item) => item.original.disabled !== true);
+    if (this.remover) {
+      this.remover();
+    }
+    this.remover = addHandler(ul, 'mousemove', (e: Event) => {
+      if (!(e.target instanceof HTMLElement)) return;
+      if (!e.target.matches(collection.itemClass)) return;
+
+      const [_li, index] = this._findLiTarget(e.target);
+      if ('movementY' in e && e.movementY !== 0 && index !== null && typeof index !== 'undefined') {
+        this.setActiveLi(Number.parseInt(index, 10));
+      }
+    });
+
+    items.forEach((item, index) => {
+      const li = this._createMenuItem(item, collection, index, doc);
+      fragment.appendChild(li);
+    });
+    ul.appendChild(fragment);
+
+    return true;
+  }
+
+  _createMenuItem(item: TributeItem<T>, collection: Collection<T>, index: number, doc: Document) {
+    const li = doc.createElement('li');
+    li.setAttribute('data-index', index.toString());
+    if (item.original.disabled) {
+      li.setAttribute('data-disabled', 'true');
+    }
+    li.className = collection.itemClass;
+    if (this.selected === index) {
+      li.classList.add(collection.selectClass);
+    }
+    // remove all content in the li and append the content of menuItemTemplate
+    const menuItemDomOrString = collection.menuItemTemplate !== null ? collection.menuItemTemplate(item) : '';
+    if (menuItemDomOrString instanceof Element) {
+      li.innerHTML = '';
+      li.appendChild(menuItemDomOrString);
+    } else {
+      li.innerHTML = menuItemDomOrString;
+    }
+    return li;
+  }
+
+  _findLiTarget(el: EventTarget | null): [] | [EventTarget, string | null] {
+    if (!el || !(el instanceof HTMLElement)) return [];
+    const index = el.getAttribute('data-index');
+    return !index ? this._findLiTarget(el.parentNode) : [el, index];
   }
 }
 
