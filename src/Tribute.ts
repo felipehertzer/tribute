@@ -1,4 +1,4 @@
-import { isContentEditable, isNotContentEditable } from './helpers';
+import { isContentEditable } from './helpers';
 import TributeContext from './TributeContext';
 import TributeEvents from './TributeEvents';
 import TributeMenu from './TributeMenu';
@@ -118,47 +118,6 @@ class Tribute<T extends {}> implements ITribute<T> {
     this.search = new TributeSearch(this);
   }
 
-  private buildCollection(config: TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>) {
-    const { values, collection, menuItemTemplate, noMatchTemplate, selectTemplate, ...collectionConfig } = config;
-
-    if (values) {
-      return [
-        {
-          ...collectionConfig,
-          values: values,
-          selectTemplate: selectTemplate ? selectTemplate.bind(this) : (item?: TributeItem<T>) => defaultSelectTemplate(this.current, item),
-          menuItemTemplate: (menuItemTemplate || defaultMenuItemTemplate).bind(this),
-          noMatchTemplate: this.createNoMatchTemplate(noMatchTemplate, noMatchTemplate),
-        },
-      ];
-    }
-
-    if (collection) {
-      if (this.autocompleteMode) console.warn('Tribute in autocomplete mode does not work for collections');
-      return collection.map((item) => ({
-        ...collectionConfig,
-        ...item,
-        selectTemplate: item.selectTemplate ? item.selectTemplate.bind(this) : (item?: TributeItem<T>) => defaultSelectTemplate(this.current, item),
-        menuItemTemplate: (item.menuItemTemplate || defaultMenuItemTemplate).bind(this),
-        noMatchTemplate: this.createNoMatchTemplate(item.noMatchTemplate, noMatchTemplate),
-      }));
-    } else {
-      throw new Error('[Tribute] No collection specified.');
-    }
-  }
-
-  private createNoMatchTemplate(template: TributeTemplate<T>['noMatchTemplate'], defaultNoMatchTemplate: TributeTemplate<T>['noMatchTemplate']) {
-    if (typeof template === 'string') {
-      return template.trim() === '' ? null : template;
-    }
-
-    if (typeof template === 'function') {
-      return template.bind(this);
-    }
-
-    return defaultNoMatchTemplate ?? (() => '<li>No Match Found!</li>').bind(this);
-  }
-
   get isActive(): boolean {
     return this._isActive;
   }
@@ -224,11 +183,19 @@ class Tribute<T extends {}> implements ITribute<T> {
     }
   }
 
+  showMenuForCollection(element: HTMLElement, collectionIndex?: number): void {
+    // Check for maximum number of items added to the input for the specific Collection
+    const index = collectionIndex || 0;
+    const collection = this.collection[index];
+    this.current.showMenuForCollection(element, collection);
+    this.showMenuFor(element);
+  }
+
   showMenuFor(element: HTMLElement & { tributeMenu?: HTMLElement }, scrollTo?: boolean): void {
     if (typeof this.current.collection === 'undefined') throw new Error('this.current.collection is undefined');
 
     // Check for maximum number of items added to the input for the specific Collection
-    if (isMaximumItemsAdded(this.current.collection, element)) {
+    if (this.current.isMaximumItemsAdded(this.current.collection, element)) {
       //console.log("Tribute: Maximum number of items added!");
       return;
     }
@@ -248,105 +215,12 @@ class Tribute<T extends {}> implements ITribute<T> {
     this.current.process(scrollTo);
   }
 
-  showMenuForCollection(element: HTMLElement, collectionIndex?: number): void {
-    // Check for maximum number of items added to the input for the specific Collection
-    const index = collectionIndex || 0;
-    const collection = this.collection[index];
-    if (typeof collection === 'undefined' || isMaximumItemsAdded(collection, element)) {
-      //console.log("Tribute: Maximum number of items added!");
-      return;
-    }
-
-    if (element !== document.activeElement) {
-      this.placeCaretAtEnd(element);
-    }
-
-    this.current.collection = collection;
-    this.current.externalTrigger = true;
-    this.current.element = element;
-
-    if (element.isContentEditable) {
-      this.insertTextAtCursor(this.current.collection.trigger);
-    } else if (isNotContentEditable(element)) {
-      this.insertAtCaret(element, this.current.collection.trigger);
-    }
-
-    this.showMenuFor(element);
-  }
-
-  // TODO: make sure this works for inputs/textareas
-  placeCaretAtEnd(el: HTMLElement) {
-    el.focus();
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    range.collapse(false);
-    const sel = window.getSelection();
-    sel?.removeAllRanges();
-    sel?.addRange(range);
-  }
-
-  // for contenteditable
-  insertTextAtCursor(text: string): void {
-    const sel = window.getSelection();
-    const range = sel?.getRangeAt(0);
-    if (!sel || !range) return;
-
-    range.deleteContents();
-    const textNode = document.createTextNode(text);
-    range.insertNode(textNode);
-    range.selectNodeContents(textNode);
-    range.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-
-  // for regular inputs
-  insertAtCaret(textarea: HTMLInputElement | HTMLTextAreaElement, text: string): void {
-    const scrollPos = textarea.scrollTop;
-    let caretPos = textarea.selectionStart;
-
-    if (!caretPos || !textarea.selectionEnd) return;
-
-    const front = textarea.value.substring(0, caretPos);
-    const back = textarea.value.substring(textarea.selectionEnd, textarea.value.length);
-    textarea.value = front + text + back;
-    caretPos = caretPos + text.length;
-    textarea.selectionStart = caretPos;
-    textarea.selectionEnd = caretPos;
-    textarea.focus();
-    textarea.scrollTop = scrollPos;
-  }
-
   hideMenu(): void {
     if (this.menu.isActive) {
       this.isActive = false;
       this.menu.deactivate();
       this.current = new TributeContext(this);
     }
-  }
-
-  selectItemAtIndex(index: string, originalEvent: Event) {
-    const _index = Number.parseInt(index, 10);
-    if (typeof _index !== 'number' || Number.isNaN(_index) || !this.current.filteredItems || !this.current.collection || !this.current.element) return;
-
-    if (this.current.collection.selectTemplate === null) return;
-
-    const item = this.current.filteredItems[_index];
-    const content = this.current.collection.selectTemplate(item);
-
-    if (_index === -1 || !item) {
-      const selectedNoMatchEvent = new CustomEvent('tribute-selected-no-match', { detail: content });
-      this.current.element.dispatchEvent(selectedNoMatchEvent);
-      return;
-    }
-
-    if (content !== null) {
-      this.replaceText(content, originalEvent, item);
-    }
-  }
-
-  replaceText(content: string | HTMLElement, originalEvent: Event, item: TributeItem<T>): void {
-    this.range.replaceTriggerText(content, true, true, originalEvent, item);
   }
 
   _append(collection: TributeCollection<T>, newValues: T[], replace: boolean): void {
@@ -414,6 +288,47 @@ class Tribute<T extends {}> implements ITribute<T> {
     });
   }
 
+  private buildCollection(config: TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>) {
+    const { values, collection, menuItemTemplate, noMatchTemplate, selectTemplate, ...collectionConfig } = config;
+
+    if (values) {
+      return [
+        {
+          ...collectionConfig,
+          values: values,
+          selectTemplate: selectTemplate ? selectTemplate.bind(this) : (item?: TributeItem<T>) => defaultSelectTemplate(this.current, item),
+          menuItemTemplate: (menuItemTemplate || defaultMenuItemTemplate).bind(this),
+          noMatchTemplate: this.createNoMatchTemplate(noMatchTemplate, noMatchTemplate),
+        },
+      ];
+    }
+
+    if (collection) {
+      if (this.autocompleteMode) console.warn('Tribute in autocomplete mode does not work for collections');
+      return collection.map((item) => ({
+        ...collectionConfig,
+        ...item,
+        selectTemplate: item.selectTemplate ? item.selectTemplate.bind(this) : (item?: TributeItem<T>) => defaultSelectTemplate(this.current, item),
+        menuItemTemplate: (item.menuItemTemplate || defaultMenuItemTemplate).bind(this),
+        noMatchTemplate: this.createNoMatchTemplate(item.noMatchTemplate, noMatchTemplate),
+      }));
+    } else {
+      throw new Error('[Tribute] No collection specified.');
+    }
+  }
+
+  private createNoMatchTemplate(template: TributeTemplate<T>['noMatchTemplate'], defaultNoMatchTemplate: TributeTemplate<T>['noMatchTemplate']) {
+    if (typeof template === 'string') {
+      return template.trim() === '' ? null : template;
+    }
+
+    if (typeof template === 'function') {
+      return template.bind(this);
+    }
+
+    return defaultNoMatchTemplate ?? (() => '<li>No Match Found!</li>').bind(this);
+  }
+
   static isContentEditable(element: HTMLElement) {
     return isContentEditable(element);
   }
@@ -436,13 +351,6 @@ function defaultSelectTemplate<T extends {}>(current: ITributeContext<T> | undef
 
 function defaultMenuItemTemplate<T extends {}>(matchItem: TributeItem<T>) {
   return matchItem.string;
-}
-
-function isMaximumItemsAdded<T extends {}>(collection: Collection<T>, element: HTMLElement): boolean {
-  const result =
-    (collection.maxDisplayItems && element.querySelectorAll(`[data-tribute-trigger="${collection.trigger}"]`).length >= collection.maxDisplayItems) ||
-    collection.isBlocked;
-  return !!result;
 }
 
 function isJQuery<T>(element: unknown): element is JQuery<T> {

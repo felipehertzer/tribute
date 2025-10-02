@@ -90,7 +90,7 @@ class TributeMenuEvents<T extends {}> {
 
       const index = li.getAttribute('data-index');
       if (index !== null) {
-        tribute.selectItemAtIndex(index, event);
+        tribute.current.selectItemAtIndex(index, event);
       }
       tribute.hideMenu();
 

@@ -178,7 +178,7 @@ class TributeEvents<T extends {}> {
             }
 
             setTimeout(() => {
-              this.tribute.selectItemAtIndex(this.tribute.menu.selected.toString(), e);
+              this.tribute.current.selectItemAtIndex(this.tribute.menu.selected.toString(), e);
               this.tribute.hideMenu();
             }, 0);
           }

@@ -20,11 +20,13 @@ export interface ITribute<T extends {}> {
   showMenuFor(element: Element, scrollTo?: boolean): void;
   showMenuForCollection(element: HTMLElement, collectionIndex?: number): void;
   spaceSelectsMatch: boolean;
-  selectItemAtIndex(index: string, originalEvent: Event): void;
   triggers(): (string | undefined)[];
 }
 
 export interface ITributeContext<T extends {}> {
+  selectItemAtIndex(index: string, originalEvent: Event): void;
+  isMaximumItemsAdded(collection: Collection<T>, element: HTMLElement & { tributeMenu?: HTMLElement }): boolean;
+  showMenuForCollection(element: HTMLElement, collection?: Collection<T>): void;
   element?: HTMLElement;
   filteredItems?: TributeItem<T>[];
   collection?: Collection<T>;
