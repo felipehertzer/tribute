@@ -2,7 +2,7 @@ import { isNotContentEditable } from './helpers';
 import type { Collection, ITribute, ITributeContext, TributeItem, TriggerInfo } from './type';
 
 class TributeContext<T extends {}> implements ITributeContext<T> {
-  element?: HTMLElement;
+  #element?: HTMLElement;
   filteredItems?: TributeItem<T>[];
   collection?: Collection<T>;
   mentionText: string;
@@ -16,6 +16,18 @@ class TributeContext<T extends {}> implements ITributeContext<T> {
     this.tribute = tribute;
     this.mentionText = '';
     this.externalTrigger = false;
+  }
+
+  set element(element: HTMLElement | undefined) {
+    if (element) {
+      this.tribute.range.element = element;
+    }
+
+    this.#element = element;
+  }
+
+  get element() {
+    return this.#element;
   }
 
   process(scrollTo: boolean) {

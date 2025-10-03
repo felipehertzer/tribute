@@ -1,6 +1,6 @@
 // Thanks to https://github.com/jeff-collins/ment.io
-import { isContentEditable, isNotContentEditable } from './helpers.js';
-import type { Coordinate, ITribute, ITributeContext, ITributeRange, TributeItem, TriggerInfo } from './type';
+import { isNotContentEditable } from './helpers.js';
+import type { Coordinate, ITribute, ITributeRange, TributeItem, TriggerInfo } from './type';
 
 type Rect = {
   top: number;
@@ -24,12 +24,32 @@ type Trigger = {
 class TributeRange<T extends {}> implements ITributeRange<T> {
   tribute: ITribute<T>;
   private readonly triggerInfoParser: TriggerInfoParser<T>;
+  private rangeHandler: BaseRangeHandler<T>;
+  private readonly nullRangeHandler: NullRangeHandler<T>;
+  private readonly textAreaOrInputRangeHandler: TextAreaOrInputRangeHandler<T>;
+  private readonly contentEditableRangeHandler: ContentEditableRangeHandler<T>;
+  #element?: HTMLElement;
 
   constructor(tribute: ITribute<T>) {
     this.tribute = tribute;
     this.triggerInfoParser = tribute.autocompleteMode
       ? new AutocompleteTriggerInfoParser(this, tribute.autocompleteSeparator)
       : new NonAutocompleteTriggerInfoParser(this, tribute);
+    this.nullRangeHandler = new NullRangeHandler(this, this.tribute.replaceTextSuffix, this.tribute.autocompleteMode);
+    this.textAreaOrInputRangeHandler = new TextAreaOrInputRangeHandler(this, this.tribute.replaceTextSuffix, this.tribute.autocompleteMode);
+    this.contentEditableRangeHandler = new ContentEditableRangeHandler(this, this.tribute.replaceTextSuffix, this.tribute.autocompleteMode);
+    this.rangeHandler = this.nullRangeHandler;
+  }
+
+  get element() {
+    return this.#element;
+  }
+
+  set element(element: HTMLElement | undefined) {
+    this.#element = element;
+    if (element) {
+      this.rangeHandler = isNotContentEditable(element) ? this.textAreaOrInputRangeHandler : this.contentEditableRangeHandler;
+    }
   }
 
   getTriggerInfo(
@@ -56,14 +76,11 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
   }
 
   positionMenuAtCaret(scrollTo: boolean) {
-    const context = this.tribute.current;
     const info = this.triggerInfoParser.getTriggerInfo(false, this.tribute.hasTrailingSpace, true, this.tribute.allowSpaces);
 
-    if (typeof context?.element === 'undefined' || typeof info === 'undefined') return;
+    if (typeof info === 'undefined' || typeof this.element === 'undefined') return;
 
-    const coordinates = isNotContentEditable(context.element)
-      ? this.getTextAreaOrInputUnderlinePosition(context.element, info.mentionPosition)
-      : this.getContentEditableCaretPosition(info.mentionPosition);
+    const coordinates = this.rangeHandler.getCoordinate(this.element, info.mentionPosition);
 
     if (coordinates) {
       this.tribute.menu.positionAtCaret(info, coordinates);
@@ -82,7 +99,7 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
     const info = this.triggerInfoParser.getTriggerInfo(true, hasTrailingSpace, requireLeadingSpace, this.tribute.allowSpaces);
     const context = this.tribute.current;
 
-    if (typeof context?.element === 'undefined' || typeof info === 'undefined') return;
+    if (typeof info === 'undefined' || typeof this.element === 'undefined') return;
     const replaceEvent = new CustomEvent('tribute-replaced', {
       detail: {
         item: item,
@@ -91,91 +108,16 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
         event: originalEvent,
       },
     });
+    this.rangeHandler.replaceTriggerText(info, text, this.element);
 
-    if (isNotContentEditable(context.element)) {
-      const myField = context.element;
-      const textSuffix = typeof this.tribute.replaceTextSuffix === 'string' ? this.tribute.replaceTextSuffix : ' ';
-      const _text = text + textSuffix;
-      const startPos = info.mentionPosition;
-      let endPos = info.mentionPosition + (info.mentionText?.length || 0) + (textSuffix === '' ? 1 : textSuffix.length);
-      if (!this.tribute.autocompleteMode) {
-        endPos += (info.mentionTriggerChar?.length || 0) - 1;
-      }
-      myField.selectionStart = startPos + _text.length;
-      myField.value = myField.value.substring(0, startPos) + _text + myField.value.substring(endPos, myField.value.length);
-      myField.selectionEnd = startPos + _text.length;
-    } else {
-      let _text = text;
-      if (_text instanceof HTMLElement) {
-        // skip adding suffix yet - TODO later
-        // text.appendChild(this.getDocument().createTextNode(textSuffix))
-      } else {
-        // add a space to the end of the pasted text
-        const textSuffix = typeof this.tribute.replaceTextSuffix === 'string' ? this.tribute.replaceTextSuffix : '\xA0';
-        _text += textSuffix;
-      }
-      let endPos = info.mentionPosition + (info.mentionText?.length || 0);
-      if (!this.tribute.autocompleteMode) {
-        endPos += info.mentionTriggerChar?.length || 0;
-      }
-      this.pasteHtml(_text, info.mentionPosition, endPos);
-    }
-
-    context.element.dispatchEvent(new CustomEvent('input', { bubbles: true }));
-    context.element.dispatchEvent(replaceEvent);
+    this.element.dispatchEvent(new CustomEvent('input', { bubbles: true }));
+    this.element.dispatchEvent(replaceEvent);
   }
 
   getSelectionInfo(): SelectionInfo | undefined {
-    const context = this.tribute.current;
-    if (typeof context.element === 'undefined') return undefined;
+    if (typeof this.element === 'undefined') return;
 
-    if (isContentEditable(context.element)) {
-      const selectionInfo = this.getContentEditableSelectedPath(context);
-      if (selectionInfo) {
-        return {
-          selected: selectionInfo.selected,
-          path: selectionInfo.path,
-          offset: selectionInfo.offset,
-        };
-      }
-    } else {
-      return { selected: context.element };
-    }
-    return undefined;
-  }
-
-  pasteHtml(htmlOrElem: string | HTMLElement, startPos: number, endPos: number): void {
-    const sel = this.getWindowSelection();
-    const range = this.getDocument().createRange();
-    if (sel === null || sel.anchorNode === null) return;
-
-    range.setStart(sel.anchorNode, startPos);
-    range.setEnd(sel.anchorNode, endPos);
-    range.deleteContents();
-
-    const el = this.getDocument().createElement('div');
-    if (htmlOrElem instanceof HTMLElement) {
-      el.appendChild(htmlOrElem);
-    } else {
-      el.innerHTML = htmlOrElem;
-    }
-    const frag = this.getDocument().createDocumentFragment();
-    let node: Node;
-    let lastNode: Node | undefined;
-    while (el.firstChild) {
-      node = el.firstChild;
-      lastNode = frag.appendChild(node);
-    }
-    range.insertNode(frag);
-
-    // Preserve the selection
-    if (lastNode) {
-      const _range = range.cloneRange();
-      _range.setStartAfter(lastNode);
-      _range.collapse(true);
-      sel?.removeAllRanges();
-      sel?.addRange(_range);
-    }
+    return this.rangeHandler.getSelectionInfo(this.element);
   }
 
   getWindowSelection() {
@@ -193,86 +135,10 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
     return window.getSelection();
   }
 
-  getNodePositionInParent(element: Node) {
-    if (element.parentNode === null) {
-      return 0;
-    }
-
-    for (let i = 0; i < element.parentNode.childNodes.length; i++) {
-      const node = element.parentNode.childNodes[i];
-
-      if (node === element) {
-        return i;
-      }
-    }
-    return undefined;
-  }
-
-  getContentEditableSelectedPath(_context: ITributeContext<T>): SelectionInfo | undefined {
-    const sel = this.getWindowSelection();
-    if (sel === null) return undefined;
-
-    let selected = sel?.anchorNode;
-    const path: (number | undefined)[] = [];
-    let offset: number;
-
-    if (selected instanceof Node) {
-      let i: number | undefined;
-      let ce = selected instanceof HTMLElement ? selected.contentEditable : false;
-      while (selected !== null && ce !== 'true') {
-        i = this.getNodePositionInParent(selected);
-        path.push(i);
-        selected = selected.parentNode;
-
-        if (selected instanceof HTMLElement) {
-          ce = selected.contentEditable;
-        }
-      }
-      path.reverse();
-
-      // getRangeAt may not exist, need alternative
-      offset = sel.getRangeAt(0).startOffset;
-      if (selected) {
-        return {
-          selected: selected,
-          path: path,
-          offset: offset,
-        };
-      }
-    }
-    return undefined;
-  }
-
   getTextPrecedingCurrentSelection() {
-    const context = this.tribute.current;
-    let text = '';
-    if (typeof context.element === 'undefined') return text;
+    if (typeof this.element === 'undefined') return;
 
-    if (isNotContentEditable(context.element)) {
-      const textComponent = context.element;
-      const startPos = textComponent.selectionStart;
-      if (textComponent.value && startPos !== null && startPos >= 0) {
-        text = textComponent.value.substring(0, startPos);
-      }
-    } else {
-      const node = this.getWindowSelection();
-      if (node === null) return text;
-      const selectedElem = node.anchorNode;
-
-      if (selectedElem != null) {
-        const workingNodeContent = selectedElem.textContent;
-        const sel = this.getWindowSelection();
-        if (sel === null) return;
-
-        const selectStartOffset = sel.getRangeAt(0).startOffset;
-
-        if (workingNodeContent && selectStartOffset >= 0) {
-          text = workingNodeContent.substring(0, selectStartOffset);
-        }
-      }
-    }
-
-    return text;
+    return this.rangeHandler.getTextPrecedingCurrentSelection(this.element);
   }
 
   isMenuOffScreen(coordinates: Coordinate, menuDimensions: { width: number; height: number }) {
@@ -305,169 +171,6 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
       bottom: typeof menuBottom === 'number' ? menuBottom > Math.ceil(windowTop + windowHeight) : undefined,
       left: typeof menuLeft === 'number' ? menuLeft < Math.floor(windowLeft) : undefined,
     };
-  }
-
-  getTextAreaOrInputUnderlinePosition(element: HTMLInputElement | HTMLTextAreaElement, position: number, _flipped?: unknown): Coordinate | undefined {
-    const properties = [
-      'direction',
-      'boxSizing',
-      'width',
-      'height',
-      'overflowX',
-      'overflowY',
-      'borderTopWidth',
-      'borderRightWidth',
-      'borderBottomWidth',
-      'borderLeftWidth',
-      'borderStyle',
-      'paddingTop',
-      'paddingRight',
-      'paddingBottom',
-      'paddingLeft',
-      'fontStyle',
-      'fontVariant',
-      'fontWeight',
-      'fontStretch',
-      'fontSize',
-      'fontSizeAdjust',
-      'lineHeight',
-      'fontFamily',
-      'textAlign',
-      'textTransform',
-      'textIndent',
-      'textDecoration',
-      'letterSpacing',
-      'wordSpacing',
-    ];
-
-    const div = this.getDocument().createElement('div');
-    div.id = 'input-textarea-caret-position-mirror-div';
-    this.getDocument().body.appendChild(div);
-
-    const computed = getComputedStyle(element);
-
-    div.style.whiteSpace = 'pre-wrap';
-    if (element.nodeName !== 'INPUT') {
-      div.style.wordWrap = 'break-word';
-    }
-
-    div.style.position = 'absolute';
-    div.style.visibility = 'hidden';
-
-    // transfer the element's properties to the div
-    for (const prop of properties) {
-      const value = computed.getPropertyValue(prop);
-      div.style.setProperty(prop, value);
-    }
-
-    //NOT SURE WHY THIS IS HERE AND IT DOESNT SEEM HELPFUL
-    // if (isFirefox) {
-    //     style.width = `${(parseInt(computed.width) - 2)}px`
-    //     if (element.scrollHeight > parseInt(computed.height))
-    //         style.overflowY = 'scroll'
-    // } else {
-    //     style.overflow = 'hidden'
-    // }
-
-    const span0 = document.createElement('span');
-    span0.textContent = element.value.substring(0, position);
-    div.appendChild(span0);
-
-    if (element.nodeName === 'INPUT' && div.textContent !== null) {
-      div.textContent = div.textContent.replace(/\s/g, ' ');
-    }
-
-    //Create a span in the div that represents where the cursor
-    //should be
-    const span = this.getDocument().createElement('span');
-    //we give it no content as this represents the cursor
-    span.textContent = '&#x200B;';
-    div.appendChild(span);
-
-    const span2 = this.getDocument().createElement('span');
-    span2.textContent = element.value.substring(position);
-    div.appendChild(span2);
-
-    const rect = element.getBoundingClientRect();
-
-    //position the div exactly over the element
-    //so we can get the bounding client rect for the span and
-    //it should represent exactly where the cursor is
-    div.style.position = 'fixed';
-    div.style.left = `${rect.left}px`;
-    div.style.top = `${rect.top}px`;
-    div.style.width = `${rect.width}px`;
-    div.style.height = `${rect.height}px`;
-    div.scrollTop = element.scrollTop;
-
-    const spanRect = span.getBoundingClientRect();
-    this.getDocument().body.removeChild(div);
-    return this.getFixedCoordinatesRelativeToRect(spanRect);
-  }
-
-  getContentEditableCaretPosition(selectedNodePosition: number) {
-    const sel = this.getWindowSelection();
-    if (sel === null || sel.anchorNode === null) return;
-
-    const range = this.getDocument().createRange();
-    range.setStart(sel.anchorNode, selectedNodePosition);
-    range.setEnd(sel.anchorNode, selectedNodePosition);
-
-    range.collapse(false);
-
-    const rect = range.getBoundingClientRect();
-
-    return this.getFixedCoordinatesRelativeToRect(rect);
-  }
-
-  getFixedCoordinatesRelativeToRect(rect: Rect) {
-    const coordinates: Coordinate = {
-      position: 'fixed',
-      left: rect.left,
-      top: rect.top + rect.height,
-    };
-
-    const menuDimensions = this.tribute.menu.getDimensions();
-
-    const availableSpaceOnTop = rect.top;
-    const availableSpaceOnBottom = window.innerHeight - (rect.top + rect.height);
-
-    //check to see where's the right place to put the menu vertically
-    const height = menuDimensions.height;
-    if (height !== null && availableSpaceOnBottom < height) {
-      if (availableSpaceOnTop >= height || availableSpaceOnTop > availableSpaceOnBottom) {
-        coordinates.top = 'auto';
-        coordinates.bottom = window.innerHeight - rect.top;
-        if (availableSpaceOnBottom < height) {
-          coordinates.maxHeight = availableSpaceOnTop;
-        }
-      } else {
-        if (availableSpaceOnTop < height) {
-          coordinates.maxHeight = availableSpaceOnBottom;
-        }
-      }
-    }
-
-    const availableSpaceOnLeft = rect.left;
-    const availableSpaceOnRight = window.innerWidth - rect.left;
-
-    //check to see where's the right place to put the menu horizontally
-    const width = menuDimensions.width;
-    if (width !== null && availableSpaceOnRight < width) {
-      if (availableSpaceOnLeft >= width || availableSpaceOnLeft > availableSpaceOnRight) {
-        coordinates.left = 'auto';
-        coordinates.right = window.innerWidth - rect.left;
-        if (availableSpaceOnRight < width) {
-          coordinates.maxWidth = availableSpaceOnLeft;
-        }
-      } else {
-        if (availableSpaceOnLeft < width) {
-          coordinates.maxWidth = availableSpaceOnRight;
-        }
-      }
-    }
-
-    return coordinates;
   }
 
   menu?: Node;
@@ -667,6 +370,371 @@ class NonAutocompleteTriggerInfoParser<T extends {}> implements TriggerInfoParse
         mentionSelectedOffset: selectionInfo?.offset,
         mentionTriggerChar: trigger.triggerChar,
       };
+    }
+    return undefined;
+  }
+}
+
+abstract class BaseRangeHandler<T extends {}> {
+  protected readonly range;
+  protected readonly replaceTextSuffix;
+  protected readonly autocompleteMode;
+
+  constructor(range: TributeRange<T>, replaceTextSuffix: string | null, autocompleteMode: boolean) {
+    this.range = range;
+    this.replaceTextSuffix = replaceTextSuffix;
+    this.autocompleteMode = autocompleteMode;
+  }
+
+  abstract getCoordinate(element: HTMLElement, position: number, _flipped?: unknown): Coordinate | undefined;
+
+  abstract replaceTriggerText(info: TriggerInfo, text: string | HTMLElement, element: HTMLElement): void;
+
+  abstract getSelectionInfo(element: HTMLElement): SelectionInfo | undefined;
+
+  abstract getTextPrecedingCurrentSelection(element: HTMLElement): string | undefined;
+
+  protected getFixedCoordinatesRelativeToRect(rect: Rect) {
+    const coordinates: Coordinate = {
+      position: 'fixed',
+      left: rect.left,
+      top: rect.top + rect.height,
+    };
+
+    const menuDimensions = this.range.tribute.menu.getDimensions();
+
+    const availableSpaceOnTop = rect.top;
+    const availableSpaceOnBottom = window.innerHeight - (rect.top + rect.height);
+
+    //check to see where's the right place to put the menu vertically
+    const height = menuDimensions.height;
+    if (height !== null && availableSpaceOnBottom < height) {
+      if (availableSpaceOnTop >= height || availableSpaceOnTop > availableSpaceOnBottom) {
+        coordinates.top = 'auto';
+        coordinates.bottom = window.innerHeight - rect.top;
+        if (availableSpaceOnBottom < height) {
+          coordinates.maxHeight = availableSpaceOnTop;
+        }
+      } else {
+        if (availableSpaceOnTop < height) {
+          coordinates.maxHeight = availableSpaceOnBottom;
+        }
+      }
+    }
+
+    const availableSpaceOnLeft = rect.left;
+    const availableSpaceOnRight = window.innerWidth - rect.left;
+
+    //check to see where's the right place to put the menu horizontally
+    const width = menuDimensions.width;
+    if (width !== null && availableSpaceOnRight < width) {
+      if (availableSpaceOnLeft >= width || availableSpaceOnLeft > availableSpaceOnRight) {
+        coordinates.left = 'auto';
+        coordinates.right = window.innerWidth - rect.left;
+        if (availableSpaceOnRight < width) {
+          coordinates.maxWidth = availableSpaceOnLeft;
+        }
+      } else {
+        if (availableSpaceOnLeft < width) {
+          coordinates.maxWidth = availableSpaceOnRight;
+        }
+      }
+    }
+
+    return coordinates;
+  }
+}
+
+class NullRangeHandler<T extends {}> extends BaseRangeHandler<T> {
+  replaceTriggerText(info: TriggerInfo, text: string | HTMLElement, element: HTMLElement): void {}
+  getSelectionInfo(element: HTMLElement): SelectionInfo | undefined {
+    return;
+  }
+  getTextPrecedingCurrentSelection(element: HTMLElement): string | undefined {
+    return;
+  }
+  getCoordinate(element: HTMLElement, position: number, _flipped?: unknown): Coordinate | undefined {
+    return;
+  }
+}
+
+class TextAreaOrInputRangeHandler<T extends {}> extends BaseRangeHandler<T> {
+  getCoordinate(element: HTMLElement, position: number, _flipped?: unknown): Coordinate | undefined {
+    if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) return;
+
+    const properties = [
+      'direction',
+      'boxSizing',
+      'width',
+      'height',
+      'overflowX',
+      'overflowY',
+      'borderTopWidth',
+      'borderRightWidth',
+      'borderBottomWidth',
+      'borderLeftWidth',
+      'borderStyle',
+      'paddingTop',
+      'paddingRight',
+      'paddingBottom',
+      'paddingLeft',
+      'fontStyle',
+      'fontVariant',
+      'fontWeight',
+      'fontStretch',
+      'fontSize',
+      'fontSizeAdjust',
+      'lineHeight',
+      'fontFamily',
+      'textAlign',
+      'textTransform',
+      'textIndent',
+      'textDecoration',
+      'letterSpacing',
+      'wordSpacing',
+    ];
+
+    const div = this.range.getDocument().createElement('div');
+    div.id = 'input-textarea-caret-position-mirror-div';
+    this.range.getDocument().body.appendChild(div);
+
+    const computed = getComputedStyle(element);
+
+    div.style.whiteSpace = 'pre-wrap';
+    if (element.nodeName !== 'INPUT') {
+      div.style.wordWrap = 'break-word';
+    }
+
+    div.style.position = 'absolute';
+    div.style.visibility = 'hidden';
+
+    // transfer the element's properties to the div
+    for (const prop of properties) {
+      const value = computed.getPropertyValue(prop);
+      div.style.setProperty(prop, value);
+    }
+
+    //NOT SURE WHY THIS IS HERE AND IT DOESNT SEEM HELPFUL
+    // if (isFirefox) {
+    //     style.width = `${(parseInt(computed.width) - 2)}px`
+    //     if (element.scrollHeight > parseInt(computed.height))
+    //         style.overflowY = 'scroll'
+    // } else {
+    //     style.overflow = 'hidden'
+    // }
+
+    const span0 = document.createElement('span');
+    span0.textContent = element.value.substring(0, position);
+    div.appendChild(span0);
+
+    if (element.nodeName === 'INPUT' && div.textContent !== null) {
+      div.textContent = div.textContent.replace(/\s/g, ' ');
+    }
+
+    //Create a span in the div that represents where the cursor
+    //should be
+    const span = this.range.getDocument().createElement('span');
+    //we give it no content as this represents the cursor
+    span.textContent = '&#x200B;';
+    div.appendChild(span);
+
+    const span2 = this.range.getDocument().createElement('span');
+    span2.textContent = element.value.substring(position);
+    div.appendChild(span2);
+
+    const rect = element.getBoundingClientRect();
+
+    //position the div exactly over the element
+    //so we can get the bounding client rect for the span and
+    //it should represent exactly where the cursor is
+    div.style.position = 'fixed';
+    div.style.left = `${rect.left}px`;
+    div.style.top = `${rect.top}px`;
+    div.style.width = `${rect.width}px`;
+    div.style.height = `${rect.height}px`;
+    div.scrollTop = element.scrollTop;
+
+    const spanRect = span.getBoundingClientRect();
+    this.range.getDocument().body.removeChild(div);
+    return this.getFixedCoordinatesRelativeToRect(spanRect);
+  }
+
+  replaceTriggerText(info: TriggerInfo, text: string | HTMLElement, element: HTMLElement) {
+    if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) return;
+
+    const myField = element;
+    const textSuffix = typeof this.replaceTextSuffix === 'string' ? this.replaceTextSuffix : ' ';
+    const _text = text + textSuffix;
+    const startPos = info.mentionPosition;
+    let endPos = info.mentionPosition + (info.mentionText?.length || 0) + (textSuffix === '' ? 1 : textSuffix.length);
+    if (!this.autocompleteMode) {
+      endPos += (info.mentionTriggerChar?.length || 0) - 1;
+    }
+    myField.selectionStart = startPos + _text.length;
+    myField.value = myField.value.substring(0, startPos) + _text + myField.value.substring(endPos, myField.value.length);
+    myField.selectionEnd = startPos + _text.length;
+  }
+
+  getSelectionInfo(element: HTMLElement): SelectionInfo | undefined {
+    return { selected: element };
+  }
+
+  getTextPrecedingCurrentSelection(element: HTMLElement): string | undefined {
+    if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) return;
+
+    const textComponent = element;
+    const startPos = textComponent.selectionStart;
+    if (textComponent.value && startPos !== null && startPos >= 0) {
+      return textComponent.value.substring(0, startPos);
+    }
+    return;
+  }
+}
+
+class ContentEditableRangeHandler<T extends {}> extends BaseRangeHandler<T> {
+  getCoordinate(element: HTMLElement, position: number, _flipped?: unknown): Coordinate | undefined {
+    const sel = this.range.getWindowSelection();
+    if (sel === null || sel.anchorNode === null) return;
+
+    const range = this.range.getDocument().createRange();
+    range.setStart(sel.anchorNode, position);
+    range.setEnd(sel.anchorNode, position);
+
+    range.collapse(false);
+
+    const rect = range.getBoundingClientRect();
+
+    return this.getFixedCoordinatesRelativeToRect(rect);
+  }
+
+  replaceTriggerText(info: TriggerInfo, text: string | HTMLElement, _element: HTMLElement) {
+    let _text = text;
+    if (_text instanceof HTMLElement) {
+      // skip adding suffix yet - TODO later
+      // text.appendChild(this.getDocument().createTextNode(textSuffix))
+    } else {
+      // add a space to the end of the pasted text
+      const textSuffix = typeof this.replaceTextSuffix === 'string' ? this.replaceTextSuffix : '\xA0';
+      _text += textSuffix;
+    }
+    let endPos = info.mentionPosition + (info.mentionText?.length || 0);
+    if (!this.autocompleteMode) {
+      endPos += info.mentionTriggerChar?.length || 0;
+    }
+    this.pasteHtml(_text, info.mentionPosition, endPos);
+  }
+
+  getSelectionInfo(element: HTMLElement): SelectionInfo | undefined {
+    const selectionInfo = this.getContentEditableSelectedPath();
+    if (selectionInfo) {
+      return {
+        selected: selectionInfo.selected,
+        path: selectionInfo.path,
+        offset: selectionInfo.offset,
+      };
+    }
+    return undefined;
+  }
+
+  getTextPrecedingCurrentSelection(element: HTMLElement): string | undefined {
+    const node = this.range.getWindowSelection();
+    if (node === null) return '';
+    const selectedElem = node.anchorNode;
+
+    if (selectedElem != null) {
+      const workingNodeContent = selectedElem.textContent;
+      const sel = this.range.getWindowSelection();
+      if (sel === null) return;
+
+      const selectStartOffset = sel.getRangeAt(0).startOffset;
+
+      if (workingNodeContent && selectStartOffset >= 0) {
+        return workingNodeContent.substring(0, selectStartOffset);
+      }
+    }
+    return;
+  }
+
+  pasteHtml(htmlOrElem: string | HTMLElement, startPos: number, endPos: number): void {
+    const sel = this.range.getWindowSelection();
+    const range = this.range.getDocument().createRange();
+    if (sel === null || sel.anchorNode === null) return;
+
+    range.setStart(sel.anchorNode, startPos);
+    range.setEnd(sel.anchorNode, endPos);
+    range.deleteContents();
+
+    const el = this.range.getDocument().createElement('div');
+    if (htmlOrElem instanceof HTMLElement) {
+      el.appendChild(htmlOrElem);
+    } else {
+      el.innerHTML = htmlOrElem;
+    }
+    const frag = this.range.getDocument().createDocumentFragment();
+    let node: Node;
+    let lastNode: Node | undefined;
+    while (el.firstChild) {
+      node = el.firstChild;
+      lastNode = frag.appendChild(node);
+    }
+    range.insertNode(frag);
+
+    // Preserve the selection
+    if (lastNode) {
+      const _range = range.cloneRange();
+      _range.setStartAfter(lastNode);
+      _range.collapse(true);
+      sel?.removeAllRanges();
+      sel?.addRange(_range);
+    }
+  }
+
+  private getContentEditableSelectedPath(): SelectionInfo | undefined {
+    const sel = this.range.getWindowSelection();
+    if (sel === null) return undefined;
+
+    let selected = sel?.anchorNode;
+    const path: (number | undefined)[] = [];
+    let offset: number;
+
+    if (selected instanceof Node) {
+      let i: number | undefined;
+      let ce = selected instanceof HTMLElement ? selected.contentEditable : false;
+      while (selected !== null && ce !== 'true') {
+        i = this.getNodePositionInParent(selected);
+        path.push(i);
+        selected = selected.parentNode;
+
+        if (selected instanceof HTMLElement) {
+          ce = selected.contentEditable;
+        }
+      }
+      path.reverse();
+
+      // getRangeAt may not exist, need alternative
+      offset = sel.getRangeAt(0).startOffset;
+      if (selected) {
+        return {
+          selected: selected,
+          path: path,
+          offset: offset,
+        };
+      }
+    }
+    return undefined;
+  }
+
+  private getNodePositionInParent(element: Node) {
+    if (element.parentNode === null) {
+      return 0;
+    }
+
+    for (let i = 0; i < element.parentNode.childNodes.length; i++) {
+      const node = element.parentNode.childNodes[i];
+
+      if (node === element) {
+        return i;
+      }
     }
     return undefined;
   }
