@@ -46,21 +46,13 @@ class TributeMenuEvents<T extends {}> {
   click(event: Event) {
     const element = event.target;
     const tribute = this.tribute;
-    if (!tribute.current || !(element instanceof Node)) return;
+    if (!tribute.current || !(element instanceof HTMLElement)) return;
 
     if (tribute.menu.element?.contains(element)) {
-      let li: Node | undefined | null = element;
       event.preventDefault();
       event.stopPropagation();
-      while (li.nodeName.toLowerCase() !== 'li') {
-        li = li.parentNode;
-        if (!li || li === tribute.menu.element) {
-          // When li === tribute.menu, it's either a click on the entire component or on the scrollbar (if visible)
-          li = undefined;
-          break;
-        }
-      }
 
+      const li = element.closest('li');
       if (!(li instanceof HTMLElement)) return;
 
       if (li.getAttribute('data-disabled') === 'true') {

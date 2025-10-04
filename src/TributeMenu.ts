@@ -228,9 +228,9 @@ class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
     }
     this.remover = addHandler(ul, 'mousemove', (e: Event) => {
       if (!(e.target instanceof HTMLElement)) return;
-      if (!e.target.matches(collection.itemClass)) return;
+      if (!e.target.matches('li[data-index]')) return;
 
-      const [_li, index] = this._findLiTarget(e.target);
+      const index = e.target.dataset.index;
       if ('movementY' in e && e.movementY !== 0 && index !== null && typeof index !== 'undefined') {
         this.setActiveLi(Number.parseInt(index, 10));
       }
@@ -264,12 +264,6 @@ class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
       li.innerHTML = menuItemDomOrString;
     }
     return li;
-  }
-
-  _findLiTarget(el: EventTarget | null): [] | [EventTarget, string | null] {
-    if (!el || !(el instanceof HTMLElement)) return [];
-    const index = el.getAttribute('data-index');
-    return !index ? this._findLiTarget(el.parentNode) : [el, index];
   }
 }
 
