@@ -93,7 +93,7 @@ class TributeContext<T extends {}> implements ITributeContext<T> {
 
   selectItemAtIndex(index: string, originalEvent: Event) {
     const _index = Number.parseInt(index, 10);
-    if (typeof _index !== 'number' || Number.isNaN(_index) || !this.filteredItems || !this.collection || !this.element) return;
+    if (Number.isNaN(_index) || !this.filteredItems || !this.collection || !this.element) return;
 
     if (this.collection.selectTemplate === null) return;
 
