@@ -28,13 +28,13 @@ class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
   activate() {
     this.selected = 0;
     window.setTimeout(() => {
-      if (this.element === null) throw new Error('the menu element is null!');
+      if (this.element === null) return;
       this.element.scrollTop = 0;
     }, 0);
   }
 
   deactivate() {
-    if (this.element === null) throw new Error('the menu element is null!');
+    if (this.element === null) return;
 
     this.element.style.cssText = 'display: none;';
     this.selected = 0;
@@ -49,7 +49,10 @@ class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
   }
 
   get items() {
-    if (this.element === null) throw new Error('the menu element is null!');
+    if (this.element === null) {
+      // return empty nodeList
+      return document.querySelectorAll<HTMLLIElement>(':not(*)');
+    }
 
     return this.element.querySelectorAll('li');
   }
@@ -59,7 +62,7 @@ class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
   }
 
   up(count: number) {
-    if (this.element === null) throw new Error('the menu element is null!');
+    if (this.element === null) return;
     //If menu.selected is -1 then there are no valid, non-disabled items
     //to navigate through
     if (this.selected === -1) {
@@ -77,7 +80,7 @@ class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
   }
 
   down(count: number) {
-    if (this.element === null) throw new Error('the menu element is null!');
+    if (this.element === null) return;
     //If menu.selected is -1 then there are no valid, non-disabled items
     //to navigate through
     if (this.selected === -1) {
@@ -95,7 +98,7 @@ class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
   }
 
   setActiveLi(index?: number) {
-    if (this.element === null) throw new Error('the menu element is null!');
+    if (this.element === null) return;
     if (!this.tribute.current.collection) return;
 
     const selectClass = this.tribute.current.collection.selectClass;
@@ -129,7 +132,7 @@ class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
   }
 
   positionAtCaret(info: unknown, coordinates: Coordinate) {
-    if (this.element === null) throw new Error('the menu element is null!');
+    if (this.element === null) return;
 
     if (typeof info === 'undefined') {
       this.element.style.cssText = 'display: none';
@@ -160,7 +163,6 @@ class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
   }
 
   getDimensions() {
-    if (this.element === null) throw new Error('the menu element is null!');
     // Width of the menu depends of its contents and position
     // We must check what its width would be without any obstruction
     // This way, we can achieve good positioning for flipping the menu
@@ -171,6 +173,9 @@ class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
       width: null,
       height: null,
     };
+    if (this.element === null) {
+      return dimensions;
+    }
 
     this.element.style.cssText = `top: 0px;
                                  left: 0px;
@@ -187,7 +192,7 @@ class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
   }
 
   render(items: TributeItem<T>[], collection: Collection<T>) {
-    if (this.ul === undefined) throw new Error('No ul element in the Menu');
+    if (this.ul === undefined) return false;
     if (!items.length) {
       return this._handleNoItem(this.ul, collection);
     } else {
@@ -196,7 +201,7 @@ class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
   }
 
   _handleNoItem(ul: HTMLElement, collection: Collection<T>) {
-    if (!this.element) throw new Error('element is empty');
+    if (!this.element) return false;
 
     const noMatchEvent = new CustomEvent('tribute-no-match', {
       detail: this.element,
