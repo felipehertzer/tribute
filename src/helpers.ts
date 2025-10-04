@@ -30,3 +30,22 @@ export function debounce<F extends (...args: unknown[]) => void>(func: F, wait: 
     if (callNow) func.apply(this, args);
   };
 }
+
+export function isJQuery<T>(element: unknown): element is JQuery<T> {
+  if (typeof element !== 'object' || element == null) {
+    return false;
+  }
+  return 'jquery' in element && typeof element.jquery !== 'undefined';
+}
+
+type Compact<T> = {
+  [P in keyof T]?: Exclude<T[P], undefined>;
+};
+
+export function compactObject<T extends Record<string, unknown>>(args: T): Compact<T> {
+  const entries = Object.entries(args) as [keyof T, T[keyof T]][];
+  const filteredEntries = entries.filter(([, value]) => value !== undefined);
+  const compactArgs = Object.assign({}, ...filteredEntries.map(([k, v]) => ({ [k]: v }))) as Compact<T>;
+
+  return compactArgs;
+}

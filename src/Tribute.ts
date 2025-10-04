@@ -1,4 +1,4 @@
-import { isContentEditable, isKeyOfObject } from './helpers';
+import { compactObject, isContentEditable, isKeyOfObject, isJQuery } from './helpers';
 import TributeContext from './TributeContext';
 import TributeEvents from './TributeEvents';
 import TributeMenu from './TributeMenu';
@@ -51,18 +51,6 @@ const defaultConfig = {
   isBlocked: false,
 } as const;
 
-type Compact<T> = {
-  [P in keyof T]?: Exclude<T[P], undefined>;
-};
-
-function compactObject<T extends Record<string, unknown>>(args: T): Compact<T> {
-  const entries = Object.entries(args) as [keyof T, T[keyof T]][];
-  const filteredEntries = entries.filter(([, value]) => value !== undefined);
-  const compactArgs = Object.assign({}, ...filteredEntries.map(([k, v]) => ({ [k]: v }))) as Compact<T>;
-
-  return compactArgs;
-}
-
 class Tribute<T extends {}> implements ITribute<T> {
   allowSpaces: boolean;
   autocompleteMode: boolean;
@@ -85,7 +73,7 @@ class Tribute<T extends {}> implements ITribute<T> {
   current: ITributeContext<T>;
 
   constructor(args: Partial<TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>>) {
-    const compactArgs: Compact<Partial<TributeCollection<T> & TributeTemplate<T> & TributeArgument<T>>> = compactObject(args);
+    const compactArgs = compactObject(args);
 
     const config = {
       ...defaultConfig,
@@ -140,13 +128,7 @@ class Tribute<T extends {}> implements ITribute<T> {
 
   attach(el: TributeElement | JQuery<HTMLElement>): void {
     // Check if it is a jQuery collection
-    let _el: HTMLElement | NodeList | HTMLCollection | Array<HTMLElement>;
-    if (isJQuery<HTMLElement>(el)) {
-      _el = el.get();
-    } else {
-      _el = el;
-    }
-
+    const _el = isJQuery<HTMLElement>(el) ? el.get() : el;
     if (!_el) {
       throw new Error('[Tribute] Must pass in a DOM node or NodeList.');
     }
@@ -352,13 +334,6 @@ function defaultSelectTemplate<T extends {}>(current: ITributeContext<T> | undef
 
 function defaultMenuItemTemplate<T extends {}>(matchItem: TributeItem<T>) {
   return matchItem.string;
-}
-
-function isJQuery<T>(element: unknown): element is JQuery<T> {
-  if (typeof element !== 'object' || element == null) {
-    return false;
-  }
-  return 'jquery' in element && typeof element.jquery !== 'undefined';
 }
 
 export default Tribute;
