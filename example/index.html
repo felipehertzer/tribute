@@ -467,7 +467,7 @@
         ],
         selectTemplate: function(item) {
           if (typeof item === "undefined") return null;
-          if (this.range.isContentEditable(this.current.element)) {
+          if (Tribute.isContentEditable(this.current.element)) {
             return (
               '<a href="http://zurb.com" target="_blank" contenteditable="false">@' +
               item.original.value +
