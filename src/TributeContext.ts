@@ -1,4 +1,4 @@
-import { isNotContentEditable } from './helpers';
+import { isTextAreaOrInput } from './helpers';
 import type { Collection, ITribute, ITributeContext, TributeItem, TriggerInfo } from './type';
 
 class TributeContext<T extends {}> implements ITributeContext<T> {
@@ -86,7 +86,7 @@ class TributeContext<T extends {}> implements ITributeContext<T> {
 
     if (element.isContentEditable) {
       this.insertTextAtCursor(this.collection.trigger);
-    } else if (isNotContentEditable(element)) {
+    } else if (isTextAreaOrInput(element)) {
       this.insertAtCaret(element, this.collection.trigger);
     }
   }

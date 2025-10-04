@@ -1,4 +1,4 @@
-import { addHandler, isNotContentEditable } from './helpers';
+import { addHandler, isTextAreaOrInput } from './helpers';
 import type { ITribute } from './type';
 
 const hotkeys = ['tab', 'backspace', 'enter', 'escape', 'space', 'arrowup', 'arrowdown'] as const;
@@ -244,7 +244,7 @@ class TributeEvents<T extends {}> {
 
   showMenuOnBackspace(key: string) {
     const isBackspace = key === 'Backspace';
-    return isNotContentEditable(this.tribute.current.element) ? isBackspace : this.tribute.isActive && isBackspace;
+    return isTextAreaOrInput(this.tribute.current.element) ? isBackspace : this.tribute.isActive && isBackspace;
   }
 }
 

@@ -1,5 +1,5 @@
 // Thanks to https://github.com/jeff-collins/ment.io
-import { isNotContentEditable } from './helpers.js';
+import { isTextAreaOrInput } from './helpers.js';
 import type { Coordinate, ITribute, ITributeRange, TributeItem, TriggerInfo } from './type';
 
 type Rect = {
@@ -48,7 +48,7 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
   set element(element: HTMLElement | undefined) {
     this.#element = element;
     if (element) {
-      this.rangeHandler = isNotContentEditable(element) ? this.textAreaOrInputRangeHandler : this.contentEditableRangeHandler;
+      this.rangeHandler = isTextAreaOrInput(element) ? this.textAreaOrInputRangeHandler : this.contentEditableRangeHandler;
     }
   }
 

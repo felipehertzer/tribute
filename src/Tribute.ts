@@ -1,4 +1,4 @@
-import { compactObject, isContentEditable, isKeyOfObject, isJQuery } from './helpers';
+import { compactObject, isKeyOfObject, isJQuery, isNotTextAreaOrInput } from './helpers';
 import TributeContext from './TributeContext';
 import TributeEvents from './TributeEvents';
 import TributeMenu from './TributeMenu';
@@ -156,7 +156,7 @@ class Tribute<T extends {}> implements ITribute<T> {
   }
 
   ensureEditable(element: HTMLElement): void {
-    if (isContentEditable(element)) {
+    if (isNotTextAreaOrInput(element)) {
       if (typeof element.contentEditable === 'string') {
         element.contentEditable = 'true';
       } else {
@@ -312,7 +312,7 @@ class Tribute<T extends {}> implements ITribute<T> {
   }
 
   static isContentEditable(element: HTMLElement) {
-    return isContentEditable(element);
+    return isNotTextAreaOrInput(element);
   }
 }
 
@@ -326,7 +326,7 @@ function defaultSelectTemplate<T extends {}>(current: ITributeContext<T> | undef
     : current.mentionText;
   const trigger = current.collection.trigger ?? '';
 
-  if (current.element && isContentEditable(current.element)) {
+  if (current.element && isNotTextAreaOrInput(current.element)) {
     return `<span class="tribute-mention">${trigger}${result}</span>`;
   }
   return `${trigger}${result}`;
