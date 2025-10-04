@@ -173,14 +173,13 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
     };
   }
 
-  menu?: Node;
   scrollIntoView(_elem?: unknown) {
     const reasonableBuffer = 20;
     let clientRect: DOMRect | undefined;
     const maxScrollDisplacement = 100;
-    let e = this.menu;
+    let e = this.tribute.menu.element;
 
-    if (typeof e === 'undefined') return;
+    if (e === null) return;
 
     while (clientRect === undefined || clientRect.height === 0) {
       if (e instanceof HTMLElement) {
@@ -188,8 +187,8 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
       }
 
       if (clientRect?.height === 0) {
-        e = e.childNodes[0];
-        if (e === undefined || !('getBoundingClientRect' in e)) {
+        e = e.childNodes[0] as HTMLElement | null;
+        if (e === undefined || e === null || !('getBoundingClientRect' in e)) {
           return;
         }
       }
