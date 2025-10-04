@@ -14,7 +14,6 @@ export interface ITribute<T extends {}> {
   hasTrailingSpace: boolean;
   isActive: boolean;
   menuContainer?: Element | null;
-  hideMenu: () => void;
   positionMenu: boolean;
   replaceTextSuffix: string | null;
   showMenuFor(element: Element, scrollTo?: boolean): void;
