@@ -98,7 +98,7 @@ class TributeContext<T extends {}> implements ITributeContext<T> {
     if (this.collection.selectTemplate === null) return;
 
     const item = this.filteredItems[_index];
-    const content = this.collection.selectTemplate(item);
+    const content = this.collection.selectTemplate(item, this.tribute);
 
     if (_index === -1 || !item) {
       const selectedNoMatchEvent = new CustomEvent('tribute-selected-no-match', { detail: content });

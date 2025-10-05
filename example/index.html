@@ -260,8 +260,8 @@
             trigger: "#",
             loadingItemTemplate: '<div style="padding: 16px">Loading</div>',
             // The function that gets call on select that retuns the content to insert
-            selectTemplate: function(item) {
-              if (Tribute.isContentEditable(this.current.element)) {
+            selectTemplate: (item, tribute) => {
+              if (Tribute.isContentEditable(tribute.current.element)) {
                 return (
                   '<a href="mailto:' +
                   item.original.email +

@@ -177,15 +177,16 @@ export type TributeCollection<T extends {}> = {
   // Fix for maximum number of items added to the input for the specific Collection
   maxDisplayItems?: number | null;
 
+  // Block specific collection, so it can be triggered or not
   isBlocked?: boolean;
 };
 
 export type TributeTemplate<T extends {}> = {
   // function called on select that returns the content to insert
-  selectTemplate: ((item: TributeItem<T> | undefined) => string | HTMLElement) | null;
+  selectTemplate: ((item: TributeItem<T> | undefined, tribute: ITribute<T>) => string | HTMLElement) | null;
 
   // template for displaying item in menu
-  menuItemTemplate: ((item: TributeItem<T>) => string | HTMLElement) | null;
+  menuItemTemplate: ((item: TributeItem<T>, tribute: ITribute<T>) => string | HTMLElement) | null;
 
   // template for when no match is found (optional),
   // If no template is provided, menu is hidden.

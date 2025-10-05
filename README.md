@@ -229,6 +229,31 @@ Both the `selectTemplate` and the `menuItemTemplate` have access to the `item` o
 }
 ```
 
+### Access the tribute instance
+
+Both the selectTemplate and the menuItemTemplate can access the tribute instance. With a function expression, this represents the tribute instance. For an arrow function expression, the tribute instance is passed as the second argument.
+
+```js
+{
+  selectTemplate: function(item) {
+    console.log(this); // tribute instance
+    '@' + item.original.value;
+  }
+}
+```
+
+```js
+{
+  selectTemplate: (item, tribute) => {
+    console.log(tribute); // tribute instance
+    '@' + item.original.value;
+  }
+}
+```
+
+```js
+```
+
 ### Trigger tribute programmatically
 
 Tribute can be manually triggered by calling an instances `showMenuForCollection` method. This is great for trigging tribute on an input by clicking an anchor or button element.
