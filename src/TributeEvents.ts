@@ -80,20 +80,10 @@ class TributeEvents<T extends {}> {
     }
 
     if (!this.tribute.isActive) {
-      if (this.tribute.autocompleteMode) {
-        this.triggerChar(event, element, '');
-      } else {
-        const charCode = this.getTriggerCharCode();
-
-        if (Number.isNaN(charCode) || !charCode) return;
-
-        const trigger = this.tribute.triggers().find((trigger) => {
-          return trigger?.charCodeAt(0) === charCode;
-        });
-
-        if (typeof trigger !== 'undefined') {
-          this.triggerChar(event, element, trigger);
-        }
+      const charCode = this.getTriggerCharCode();
+      const trigger = this.tribute.range.getTrigger(charCode);
+      if (typeof trigger !== 'undefined') {
+        this.triggerChar(event, element, trigger);
       }
     }
 
@@ -126,17 +116,17 @@ class TributeEvents<T extends {}> {
 
   getTriggerCharCode() {
     const tribute = this.tribute;
-    const info = tribute.range.getTriggerInfo(false, tribute.hasTrailingSpace, true, tribute.allowSpaces, tribute.autocompleteMode);
+    const info = tribute.range.getTriggerInfo(false, tribute.hasTrailingSpace, true, tribute.allowSpaces);
 
     if (info?.mentionTriggerChar) {
       return info.mentionTriggerChar.charCodeAt(0);
     }
-    return false;
+    return undefined;
   }
 
   updateSelection(el: HTMLElement) {
     this.tribute.current.element = el;
-    const info = this.tribute.range.getTriggerInfo(false, this.tribute.hasTrailingSpace, true, this.tribute.allowSpaces, this.tribute.autocompleteMode);
+    const info = this.tribute.range.getTriggerInfo(false, this.tribute.hasTrailingSpace, true, this.tribute.allowSpaces);
 
     if (info) {
       this.tribute.current.updateSelection(info);

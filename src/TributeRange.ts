@@ -56,10 +56,13 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
     menuAlreadyActive: boolean,
     hasTrailingSpace: boolean,
     requireLeadingSpace: boolean,
-    allowSpaces: boolean,
-    isAutocomplete: boolean,
+    allowSpaces: boolean
   ): TriggerInfo | undefined {
     return this.triggerInfoParser.getTriggerInfo(menuAlreadyActive, hasTrailingSpace, requireLeadingSpace, allowSpaces);
+  }
+
+  getTrigger(charCode?: number) {
+    return this.triggerInfoParser.getTrigger(charCode);
   }
 
   getDocument() {
@@ -219,6 +222,7 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
 
 interface TriggerInfoParser<T extends {}> {
   getTriggerInfo(menuAlreadyActive: boolean, hasTrailingSpace: boolean, requireLeadingSpace: boolean, allowSpaces: boolean): TriggerInfo | undefined;
+  getTrigger(charCode?: number): string | undefined;
 }
 
 class AutocompleteTriggerInfoParser<T extends {}> implements TriggerInfoParser<T> {
@@ -227,6 +231,10 @@ class AutocompleteTriggerInfoParser<T extends {}> implements TriggerInfoParser<T
   constructor(range: TributeRange<T>, separator: RegExp | null) {
     this.range = range;
     this.separator = separator;
+  }
+
+  getTrigger(charCode?: number) {
+    return '';
   }
 
   getTriggerInfo(menuAlreadyActive: boolean, hasTrailingSpace: boolean, requireLeadingSpace: boolean, allowSpaces: boolean): TriggerInfo | undefined {
@@ -269,6 +277,19 @@ class NonAutocompleteTriggerInfoParser<T extends {}> implements TriggerInfoParse
   constructor(range: TributeRange<T>, tribute: ITribute<T>) {
     this.range = range;
     this.tribute = tribute;
+  }
+
+  getTrigger(charCode?: number) {
+    if (Number.isNaN(charCode) || !charCode) return;
+
+    const trigger = this.range.tribute.triggers().find((trigger) => {
+      return trigger?.charCodeAt(0) === charCode;
+    });
+
+    if (typeof trigger !== 'undefined') {
+      return trigger;
+    }
+    return;
   }
 
   getTriggerInfo(menuAlreadyActive: boolean, hasTrailingSpace: boolean, requireLeadingSpace: boolean, allowSpaces: boolean): TriggerInfo | undefined {
