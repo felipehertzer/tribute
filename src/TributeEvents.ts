@@ -21,13 +21,9 @@ class TributeEvents<T extends {}> {
       addHandler(element, 'keydown', (event: Event) => {
         this.keydown(event);
       }),
-    );
-    this.removers.push(
       addHandler(element, 'keyup', (event: Event) => {
         this.keyup(event);
       }),
-    );
-    this.removers.push(
       addHandler(element, 'input', (event: Event) => {
         this.input(event);
       }),
