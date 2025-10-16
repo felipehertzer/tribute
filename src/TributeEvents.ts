@@ -9,20 +9,34 @@ class TributeEvents<T extends {}> {
   tribute: ITribute<T>;
   inputEvent: boolean;
   commandEvent?: boolean;
+  compositionFilter: CompositionFilter;
 
   constructor(tribute: ITribute<T>) {
     this.tribute = tribute;
     this.removers = [];
     this.inputEvent = false;
+    this.compositionFilter = new CompositionFilter();
   }
 
   bind(element: EventTarget) {
     this.removers.push(
+      addHandler(element, 'compositionstart', (event: Event) => {
+        this.compositionFilter.compositionstart(event);
+      }),
+      addHandler(element, 'compositionend', (event: Event) => {
+        this.compositionFilter.compositionend(event);
+      }),
+      addHandler(element, 'keydown', (event: Event) => {
+        this.compositionFilter.keydown(event);
+      }),
       addHandler(element, 'keydown', (event: Event) => {
         this.keydown(event);
       }),
       addHandler(element, 'keyup', (event: Event) => {
         this.keyup(event);
+      }),
+      addHandler(element, 'input', (event: Event) => {
+        this.compositionFilter.input(event);
       }),
       addHandler(element, 'input', (event: Event) => {
         this.input(event);
@@ -231,6 +245,61 @@ class TributeEvents<T extends {}> {
   showMenuOnBackspace(key: string) {
     const isBackspace = key === 'Backspace';
     return isTextAreaOrInput(this.tribute.current.element) ? isBackspace : this.tribute.isActive && isBackspace;
+  }
+}
+
+class CompositionFilter {
+  private isComposing = false;
+  #isFirefox?: boolean;
+
+  protected get isFirefox() {
+    if (this.#isFirefox !== undefined) {
+      return this.#isFirefox;
+    }
+    this.#isFirefox = window.navigator.userAgent.toLowerCase().includes('firefox');
+    return this.#isFirefox;
+  }
+
+  compositionstart(_event: Event) {
+    // console.log(`composition start: ${this.isComposing}`);
+    this.isComposing = true;
+  }
+
+  compositionend(event: Event) {
+    // console.log(`composition end: ${this.isComposing}`);
+    if (event instanceof CompositionEvent && this.isComposing) {
+      this.isComposing = false;
+      if (!this.isFirefox) {
+        event.target?.dispatchEvent(
+          new InputEvent('input', {
+            inputType: 'insertText',
+            data: event.data,
+            isComposing: false,
+          }),
+        );
+      }
+    }
+  }
+
+  keydown(event: Event) {
+    // console.log(`keydown: ${this.isComposing}`);
+    if (!(event instanceof KeyboardEvent)) return;
+
+    if (this.isComposing && event.code === 'Enter') {
+      this.isComposing = false;
+    }
+  }
+
+  input(event: Event) {
+    // console.log(`input: ${this.isComposing}`);
+    if (!(event instanceof InputEvent)) return;
+
+    if (event.inputType === 'insertFromComposition') {
+      this.isComposing = false;
+    }
+    if (this.isComposing) {
+      event.stopImmediatePropagation();
+    }
   }
 }
 
