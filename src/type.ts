@@ -85,12 +85,7 @@ export interface ITributeRange<T extends {}> {
   positionMenuAtCaret(scrollTo?: boolean): void;
   replaceTriggerText(text: string | HTMLElement, requireLeadingSpace: boolean, hasTrailingSpace: boolean, originalEvent: Event, item: TributeItem<T>): void;
   getTrigger(charCode?: number): string | undefined;
-  getTriggerInfo(
-    menuAlreadyActive: boolean,
-    hasTrailingSpace: boolean,
-    requireLeadingSpace: boolean,
-    allowSpaces: boolean
-  ): TriggerInfo | undefined;
+  getTriggerInfo(menuAlreadyActive: boolean, hasTrailingSpace: boolean, requireLeadingSpace: boolean, allowSpaces: boolean): TriggerInfo | undefined;
 }
 
 export interface ITributeSearch<T extends {}> {

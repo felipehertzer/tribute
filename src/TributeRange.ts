@@ -52,12 +52,7 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
     }
   }
 
-  getTriggerInfo(
-    menuAlreadyActive: boolean,
-    hasTrailingSpace: boolean,
-    requireLeadingSpace: boolean,
-    allowSpaces: boolean
-  ): TriggerInfo | undefined {
+  getTriggerInfo(menuAlreadyActive: boolean, hasTrailingSpace: boolean, requireLeadingSpace: boolean, allowSpaces: boolean): TriggerInfo | undefined {
     return this.triggerInfoParser.getTriggerInfo(menuAlreadyActive, hasTrailingSpace, requireLeadingSpace, allowSpaces);
   }
 
@@ -220,7 +215,7 @@ class TributeRange<T extends {}> implements ITributeRange<T> {
   }
 }
 
-interface TriggerInfoParser<T extends {}> {
+interface TriggerInfoParser<_T extends {}> {
   getTriggerInfo(menuAlreadyActive: boolean, hasTrailingSpace: boolean, requireLeadingSpace: boolean, allowSpaces: boolean): TriggerInfo | undefined;
   getTrigger(charCode?: number): string | undefined;
 }
@@ -233,11 +228,11 @@ class AutocompleteTriggerInfoParser<T extends {}> implements TriggerInfoParser<T
     this.separator = separator;
   }
 
-  getTrigger(charCode?: number) {
+  getTrigger(_charCode?: number) {
     return '';
   }
 
-  getTriggerInfo(menuAlreadyActive: boolean, hasTrailingSpace: boolean, requireLeadingSpace: boolean, allowSpaces: boolean): TriggerInfo | undefined {
+  getTriggerInfo(_menuAlreadyActive: boolean, _hasTrailingSpace: boolean, _requireLeadingSpace: boolean, _allowSpaces: boolean): TriggerInfo | undefined {
     const selectionInfo = this.range.getSelectionInfo();
     const effectiveRange = this.range.getTextPrecedingCurrentSelection();
 
@@ -466,14 +461,14 @@ abstract class BaseRangeHandler<T extends {}> {
 }
 
 class NullRangeHandler<T extends {}> extends BaseRangeHandler<T> {
-  replaceTriggerText(info: TriggerInfo, text: string | HTMLElement, element: HTMLElement): void {}
-  getSelectionInfo(element: HTMLElement): SelectionInfo | undefined {
+  replaceTriggerText(_info: TriggerInfo, _text: string | HTMLElement, _element: HTMLElement): void {}
+  getSelectionInfo(_element: HTMLElement): SelectionInfo | undefined {
     return;
   }
-  getTextPrecedingCurrentSelection(element: HTMLElement): string | undefined {
+  getTextPrecedingCurrentSelection(_element: HTMLElement): string | undefined {
     return;
   }
-  getCoordinate(element: HTMLElement, position: number, _flipped?: unknown): Coordinate | undefined {
+  getCoordinate(_element: HTMLElement, _position: number, _flipped?: unknown): Coordinate | undefined {
     return;
   }
 }
@@ -612,7 +607,7 @@ class TextAreaOrInputRangeHandler<T extends {}> extends BaseRangeHandler<T> {
 }
 
 class ContentEditableRangeHandler<T extends {}> extends BaseRangeHandler<T> {
-  getCoordinate(element: HTMLElement, position: number, _flipped?: unknown): Coordinate | undefined {
+  getCoordinate(_element: HTMLElement, position: number, _flipped?: unknown): Coordinate | undefined {
     const sel = this.range.getWindowSelection();
     if (sel === null || sel.anchorNode === null) return;
 
@@ -644,7 +639,7 @@ class ContentEditableRangeHandler<T extends {}> extends BaseRangeHandler<T> {
     this.pasteHtml(_text, info.mentionPosition, endPos);
   }
 
-  getSelectionInfo(element: HTMLElement): SelectionInfo | undefined {
+  getSelectionInfo(_element: HTMLElement): SelectionInfo | undefined {
     const selectionInfo = this.getContentEditableSelectedPath();
     if (selectionInfo) {
       return {
@@ -656,7 +651,7 @@ class ContentEditableRangeHandler<T extends {}> extends BaseRangeHandler<T> {
     return undefined;
   }
 
-  getTextPrecedingCurrentSelection(element: HTMLElement): string | undefined {
+  getTextPrecedingCurrentSelection(_element: HTMLElement): string | undefined {
     const node = this.range.getWindowSelection();
     if (node === null) return '';
     const selectedElem = node.anchorNode;

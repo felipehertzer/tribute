@@ -1,4 +1,4 @@
-import { compactObject, isKeyOfObject, isJQuery, isNotTextAreaOrInput } from './helpers';
+import { compactObject, isJQuery, isKeyOfObject, isNotTextAreaOrInput } from './helpers';
 import TributeContext from './TributeContext';
 import TributeEvents from './TributeEvents';
 import TributeMenu from './TributeMenu';
