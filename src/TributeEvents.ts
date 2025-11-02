@@ -248,6 +248,9 @@ class TributeEvents<T extends {}> {
   }
 }
 
+/*
+ * Filter to ignore input during IME(Input Method Editor) conversion
+ */
 class CompositionFilter {
   private isComposing = false;
   #isFirefox?: boolean;
