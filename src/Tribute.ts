@@ -174,7 +174,7 @@ class Tribute<T extends {}> implements ITribute<T> {
   }
 
   showMenuFor(element: HTMLElement & { tributeMenu?: HTMLElement }, scrollTo?: boolean): void {
-    if (typeof this.current.collection === 'undefined') throw new Error('this.current.collection is undefined');
+    if (typeof this.current.collection === 'undefined') return;
 
     // Check for maximum number of items added to the input for the specific Collection
     if (this.current.isMaximumItemsAdded(this.current.collection, element)) {
