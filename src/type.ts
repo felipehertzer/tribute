@@ -1,4 +1,4 @@
-export type Collection<T extends {}> = TributeCollection<T> & TributeTemplateWithDefault<T>;
+export type Collection<T extends {}> = TributeCollection<T> & TributeTemplate<T>;
 
 export interface ITribute<T extends {}> {
   autocompleteMode: boolean;
@@ -14,17 +14,18 @@ export interface ITribute<T extends {}> {
   hasTrailingSpace: boolean;
   isActive: boolean;
   menuContainer?: Element | null;
-  hideMenu: () => void;
   positionMenu: boolean;
   replaceTextSuffix: string | null;
   showMenuFor(element: Element, scrollTo?: boolean): void;
   showMenuForCollection(element: HTMLElement, collectionIndex?: number): void;
   spaceSelectsMatch: boolean;
-  selectItemAtIndex(index: string, originalEvent: Event): void;
   triggers(): (string | undefined)[];
 }
 
 export interface ITributeContext<T extends {}> {
+  selectItemAtIndex(index: string, originalEvent: Event): void;
+  isMaximumItemsAdded(collection: Collection<T>, element: HTMLElement & { tributeMenu?: HTMLElement }): boolean;
+  showMenuForCollection(element: HTMLElement, collection?: Collection<T>): void;
   element?: HTMLElement;
   filteredItems?: TributeItem<T>[];
   collection?: Collection<T>;
@@ -58,6 +59,7 @@ export type TriggerInfo = {
 };
 
 export interface ITributeMenu<T extends {}> {
+  render(items: TributeItem<T>[], collection: Collection<T>): boolean;
   element: HTMLElement | null;
   activate(): void;
   deactivate(): void;
@@ -78,16 +80,12 @@ export interface ITributeEvents {
 }
 
 export interface ITributeRange<T extends {}> {
+  element?: HTMLElement;
   getDocument(): Document;
   positionMenuAtCaret(scrollTo?: boolean): void;
   replaceTriggerText(text: string | HTMLElement, requireLeadingSpace: boolean, hasTrailingSpace: boolean, originalEvent: Event, item: TributeItem<T>): void;
-  getTriggerInfo(
-    menuAlreadyActive: boolean,
-    hasTrailingSpace: boolean,
-    requireLeadingSpace: boolean,
-    allowSpaces: boolean,
-    isAutocomplete: boolean,
-  ): TriggerInfo | undefined;
+  getTrigger(charCode?: number): string | undefined;
+  getTriggerInfo(menuAlreadyActive: boolean, hasTrailingSpace: boolean, requireLeadingSpace: boolean, allowSpaces: boolean): TriggerInfo | undefined;
 }
 
 export interface ITributeSearch<T extends {}> {
@@ -174,27 +172,16 @@ export type TributeCollection<T extends {}> = {
   // Fix for maximum number of items added to the input for the specific Collection
   maxDisplayItems?: number | null;
 
+  // Block specific collection, so it can be triggered or not
   isBlocked?: boolean;
 };
 
 export type TributeTemplate<T extends {}> = {
   // function called on select that returns the content to insert
-  selectTemplate?: ((item: TributeItem<T> | undefined) => string | HTMLElement) | null;
+  selectTemplate: ((item: TributeItem<T> | undefined, tribute: ITribute<T>) => string | HTMLElement) | null;
 
   // template for displaying item in menu
-  menuItemTemplate?: ((item: TributeItem<T>) => string | HTMLElement) | null;
-
-  // template for when no match is found (optional),
-  // If no template is provided, menu is hidden.
-  noMatchTemplate?: (() => string) | string | null;
-};
-
-export type TributeTemplateWithDefault<T extends {}> = {
-  // function called on select that returns the content to insert
-  selectTemplate: (item: TributeItem<T> | undefined) => string | HTMLElement;
-
-  // template for displaying item in menu
-  menuItemTemplate: (item: TributeItem<T>) => string | HTMLElement;
+  menuItemTemplate: ((item: TributeItem<T>, tribute: ITribute<T>) => string | HTMLElement) | null;
 
   // template for when no match is found (optional),
   // If no template is provided, menu is hidden.

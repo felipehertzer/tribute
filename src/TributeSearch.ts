@@ -117,7 +117,7 @@ class TributeSearch<T extends {}> implements ITributeSearch<T> {
   filter(pattern: string, arr: T[], opts?: TributeSearchOpts<T>) {
     const _opts = opts || {};
     return arr
-      .reduce((prev: TributeItem<T>[], element: T, idx: number, arr) => {
+      .reduce((prev: TributeItem<T>[], element: T, idx: number, _arr) => {
         let str: string | T | null | undefined = element;
 
         if (_opts.extract) {

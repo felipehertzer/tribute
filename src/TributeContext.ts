@@ -1,7 +1,8 @@
+import { isTextAreaOrInput } from './helpers';
 import type { Collection, ITribute, ITributeContext, TributeItem, TriggerInfo } from './type';
 
-class TributeContext<T extends { disabled?: boolean }> implements ITributeContext<T> {
-  element?: HTMLElement;
+class TributeContext<T extends {}> implements ITributeContext<T> {
+  #element?: HTMLElement;
   filteredItems?: TributeItem<T>[];
   collection?: Collection<T>;
   mentionText: string;
@@ -15,6 +16,18 @@ class TributeContext<T extends { disabled?: boolean }> implements ITributeContex
     this.tribute = tribute;
     this.mentionText = '';
     this.externalTrigger = false;
+  }
+
+  set element(element: HTMLElement | undefined) {
+    if (element) {
+      this.tribute.range.element = element;
+    }
+
+    this.#element = element;
+  }
+
+  get element() {
+    return this.#element;
   }
 
   process(scrollTo: boolean) {
@@ -33,10 +46,9 @@ class TributeContext<T extends { disabled?: boolean }> implements ITributeContex
       const items = this._filterItems(collection, values);
       this.filteredItems = items;
 
-      if (!items.length) {
-        this._handleNoItem(ul, collection, scrollTo);
-      } else {
-        this._renderMenu(items, ul, collection, scrollTo);
+      const scroll = this.tribute.menu.render(items, collection);
+      if (scroll === true && scrollTo === true) {
+        this.tribute.range.positionMenuAtCaret(scrollTo);
       }
     };
 
@@ -56,6 +68,90 @@ class TributeContext<T extends { disabled?: boolean }> implements ITributeContex
     this.selectedPath = info.mentionSelectedPath;
     this.mentionText = info.mentionText || '';
     this.selectedOffset = info.mentionSelectedOffset;
+  }
+
+  showMenuForCollection(element: HTMLElement, collection?: Collection<T>): void {
+    if (typeof collection === 'undefined' || this.isMaximumItemsAdded(collection, element)) {
+      //console.log("Tribute: Maximum number of items added!");
+      return;
+    }
+
+    if (element !== document.activeElement) {
+      this.placeCaretAtEnd(element);
+    }
+
+    this.collection = collection;
+    this.externalTrigger = true;
+    this.element = element;
+
+    if (element.isContentEditable) {
+      this.insertTextAtCursor(this.collection.trigger);
+    } else if (isTextAreaOrInput(element)) {
+      this.insertAtCaret(element, this.collection.trigger);
+    }
+  }
+
+  selectItemAtIndex(index: string, originalEvent: Event) {
+    const _index = Number.parseInt(index, 10);
+    if (Number.isNaN(_index) || !this.filteredItems || !this.collection || !this.element) return;
+
+    if (this.collection.selectTemplate === null) return;
+
+    const item = this.filteredItems[_index];
+    const content = this.collection.selectTemplate(item, this.tribute);
+
+    if (_index === -1 || !item) {
+      const selectedNoMatchEvent = new CustomEvent('tribute-selected-no-match', { detail: content });
+      this.element.dispatchEvent(selectedNoMatchEvent);
+      return;
+    }
+
+    if (content !== null) {
+      this.tribute.range.replaceTriggerText(content, true, true, originalEvent, item);
+    }
+  }
+
+  // TODO: make sure this works for inputs/textareas
+  private placeCaretAtEnd(el: HTMLElement) {
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  }
+
+  // for contenteditable
+  private insertTextAtCursor(text: string): void {
+    const sel = window.getSelection();
+    const range = sel?.getRangeAt(0);
+    if (!sel || !range) return;
+
+    range.deleteContents();
+    const textNode = document.createTextNode(text);
+    range.insertNode(textNode);
+    range.selectNodeContents(textNode);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  // for regular inputs
+  private insertAtCaret(textarea: HTMLInputElement | HTMLTextAreaElement, text: string): void {
+    const scrollPos = textarea.scrollTop;
+    let caretPos = textarea.selectionStart;
+
+    if (!caretPos || !textarea.selectionEnd) return;
+
+    const front = textarea.value.substring(0, caretPos);
+    const back = textarea.value.substring(textarea.selectionEnd, textarea.value.length);
+    textarea.value = front + text + back;
+    caretPos = caretPos + text.length;
+    textarea.selectionStart = caretPos;
+    textarea.selectionEnd = caretPos;
+    textarea.focus();
+    textarea.scrollTop = scrollPos;
   }
 
   get isMentionLengthUnderMinimum() {
@@ -90,68 +186,11 @@ class TributeContext<T extends { disabled?: boolean }> implements ITributeContex
     return items;
   }
 
-  _handleNoItem(ul: HTMLElement, collection: Collection<T>, scrollTo: boolean) {
-    if (!this.element) throw new Error('element is empty');
-
-    const noMatchEvent = new CustomEvent('tribute-no-match', {
-      detail: this.tribute.menu.element,
-    });
-    this.element.dispatchEvent(noMatchEvent);
-    if ((typeof collection.noMatchTemplate === 'function' && !collection.noMatchTemplate()) || !collection.noMatchTemplate) {
-      this.tribute.hideMenu();
-    } else {
-      ul.innerHTML = typeof collection.noMatchTemplate === 'function' ? collection.noMatchTemplate() : collection.noMatchTemplate;
-      this.tribute.range.positionMenuAtCaret(scrollTo);
-    }
-  }
-
-  _renderMenu(items: TributeItem<T>[], ul: HTMLElement, collection: Collection<T>, scrollTo: boolean) {
-    ul.innerHTML = '';
-    const doc = this.tribute.range.getDocument();
-    const fragment = doc.createDocumentFragment();
-
-    this.tribute.menu.selected = items.findIndex((item) => item.original.disabled !== true);
-
-    items.forEach((item, index) => {
-      const li = this._createMenuItem(item, collection, index, doc);
-      fragment.appendChild(li);
-    });
-    ul.appendChild(fragment);
-
-    this.tribute.range.positionMenuAtCaret(scrollTo);
-  }
-
-  _createMenuItem(item: TributeItem<T>, collection: Collection<T>, index: number, doc: Document) {
-    const li = doc.createElement('li');
-    li.setAttribute('data-index', index.toString());
-    if (item.original.disabled) {
-      li.setAttribute('data-disabled', 'true');
-    }
-    li.className = collection.itemClass;
-    li.addEventListener('mousemove', (e: Event) => {
-      const [li, index] = this._findLiTarget(e.target);
-      if ('movementY' in e && e.movementY !== 0 && index !== null && typeof index !== 'undefined') {
-        this.tribute.menu.setActiveLi(Number.parseInt(index));
-      }
-    });
-    if (this.tribute.menu.selected === index) {
-      li.classList.add(collection.selectClass);
-    }
-    // remove all content in the li and append the content of menuItemTemplate
-    const menuItemDomOrString = collection.menuItemTemplate(item);
-    if (menuItemDomOrString instanceof Element) {
-      li.innerHTML = '';
-      li.appendChild(menuItemDomOrString);
-    } else {
-      li.innerHTML = menuItemDomOrString;
-    }
-    return li;
-  }
-
-  _findLiTarget(el: EventTarget | null): [] | [EventTarget, string | null] {
-    if (!el || !(el instanceof HTMLElement)) return [];
-    const index = el.getAttribute('data-index');
-    return !index ? this._findLiTarget(el.parentNode) : [el, index];
+  isMaximumItemsAdded<T extends {}>(collection: Collection<T>, element: HTMLElement): boolean {
+    const result =
+      (collection.maxDisplayItems && element.querySelectorAll(`[data-tribute-trigger="${collection.trigger}"]`).length >= collection.maxDisplayItems) ||
+      collection.isBlocked;
+    return !!result;
   }
 }
 

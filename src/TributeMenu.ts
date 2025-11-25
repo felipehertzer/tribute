@@ -1,9 +1,13 @@
-import type { Coordinate, ITribute, ITributeMenu } from './type';
+import { addHandler } from './helpers';
+import type { Collection, Coordinate, ITribute, ITributeMenu, TributeItem } from './type';
 
-class TributeMenu<T extends {}> implements ITributeMenu<T> {
+class TributeMenu<T extends { disabled?: boolean }> implements ITributeMenu<T> {
   element: HTMLElement | null;
   selected: number;
   tribute: ITribute<T>;
+
+  private ul?: HTMLElement;
+  private remover?: () => void;
 
   constructor(tribute: ITribute<T>) {
     this.tribute = tribute;
@@ -13,9 +17,9 @@ class TributeMenu<T extends {}> implements ITributeMenu<T> {
 
   create(doc: Document, containerClass: string): HTMLElement {
     const wrapper = doc.createElement('div');
-    const ul = doc.createElement('ul');
+    this.ul = doc.createElement('ul');
     wrapper.className = containerClass;
-    wrapper.appendChild(ul);
+    wrapper.appendChild(this.ul);
 
     this.element = this.tribute.menuContainer ? this.tribute.menuContainer.appendChild(wrapper) : doc.body.appendChild(wrapper);
     return this.element;
@@ -24,13 +28,13 @@ class TributeMenu<T extends {}> implements ITributeMenu<T> {
   activate() {
     this.selected = 0;
     window.setTimeout(() => {
-      if (this.element === null) throw new Error('the menu element is null!');
+      if (this.element === null) return;
       this.element.scrollTop = 0;
     }, 0);
   }
 
   deactivate() {
-    if (this.element === null) throw new Error('the menu element is null!');
+    if (this.element === null) return;
 
     this.element.style.cssText = 'display: none;';
     this.selected = 0;
@@ -45,7 +49,10 @@ class TributeMenu<T extends {}> implements ITributeMenu<T> {
   }
 
   get items() {
-    if (this.element === null) throw new Error('the menu element is null!');
+    if (this.element === null) {
+      // return empty nodeList
+      return document.querySelectorAll<HTMLLIElement>(':not(*)');
+    }
 
     return this.element.querySelectorAll('li');
   }
@@ -55,7 +62,7 @@ class TributeMenu<T extends {}> implements ITributeMenu<T> {
   }
 
   up(count: number) {
-    if (this.element === null) throw new Error('the menu element is null!');
+    if (this.element === null) return;
     //If menu.selected is -1 then there are no valid, non-disabled items
     //to navigate through
     if (this.selected === -1) {
@@ -73,7 +80,7 @@ class TributeMenu<T extends {}> implements ITributeMenu<T> {
   }
 
   down(count: number) {
-    if (this.element === null) throw new Error('the menu element is null!');
+    if (this.element === null) return;
     //If menu.selected is -1 then there are no valid, non-disabled items
     //to navigate through
     if (this.selected === -1) {
@@ -91,12 +98,12 @@ class TributeMenu<T extends {}> implements ITributeMenu<T> {
   }
 
   setActiveLi(index?: number) {
-    if (this.element === null) throw new Error('the menu element is null!');
+    if (this.element === null) return;
     if (!this.tribute.current.collection) return;
 
     const selectClass = this.tribute.current.collection.selectClass;
     const lis = this.items;
-    const length = lis.length >>> 0;
+    const _length = lis.length >>> 0;
 
     if (index) {
       this.selected = index;
@@ -125,7 +132,7 @@ class TributeMenu<T extends {}> implements ITributeMenu<T> {
   }
 
   positionAtCaret(info: unknown, coordinates: Coordinate) {
-    if (this.element === null) throw new Error('the menu element is null!');
+    if (this.element === null) return;
 
     if (typeof info === 'undefined') {
       this.element.style.cssText = 'display: none';
@@ -156,7 +163,6 @@ class TributeMenu<T extends {}> implements ITributeMenu<T> {
   }
 
   getDimensions() {
-    if (this.element === null) throw new Error('the menu element is null!');
     // Width of the menu depends of its contents and position
     // We must check what its width would be without any obstruction
     // This way, we can achieve good positioning for flipping the menu
@@ -167,6 +173,9 @@ class TributeMenu<T extends {}> implements ITributeMenu<T> {
       width: null,
       height: null,
     };
+    if (this.element === null) {
+      return dimensions;
+    }
 
     this.element.style.cssText = `top: 0px;
                                  left: 0px;
@@ -180,6 +189,81 @@ class TributeMenu<T extends {}> implements ITributeMenu<T> {
     this.element.style.cssText = 'display: none;';
 
     return dimensions;
+  }
+
+  render(items: TributeItem<T>[], collection: Collection<T>) {
+    if (this.ul === undefined) return false;
+    if (!items.length) {
+      return this._handleNoItem(this.ul, collection);
+    } else {
+      return this._renderMenu(items, this.ul, collection);
+    }
+  }
+
+  _handleNoItem(ul: HTMLElement, collection: Collection<T>) {
+    if (!this.element) return false;
+
+    const noMatchEvent = new CustomEvent('tribute-no-match', {
+      detail: this.element,
+    });
+    this.element.dispatchEvent(noMatchEvent);
+    if ((typeof collection.noMatchTemplate === 'function' && !collection.noMatchTemplate()) || !collection.noMatchTemplate) {
+      this.tribute.hideMenu();
+    } else {
+      ul.innerHTML = typeof collection.noMatchTemplate === 'function' ? collection.noMatchTemplate() : collection.noMatchTemplate;
+
+      return true;
+    }
+    return false;
+  }
+
+  _renderMenu(items: TributeItem<T>[], ul: HTMLElement, collection: Collection<T>) {
+    ul.innerHTML = '';
+    const doc = this.tribute.range.getDocument();
+    const fragment = doc.createDocumentFragment();
+
+    this.selected = items.findIndex((item) => item.original.disabled !== true);
+    if (this.remover) {
+      this.remover();
+    }
+    this.remover = addHandler(ul, 'mousemove', (e: Event) => {
+      if (!(e.target instanceof HTMLElement)) return;
+      if (!e.target.matches('li[data-index]')) return;
+
+      const index = e.target.dataset.index;
+      if ('movementY' in e && e.movementY !== 0 && index !== null && typeof index !== 'undefined') {
+        this.setActiveLi(Number.parseInt(index, 10));
+      }
+    });
+
+    items.forEach((item, index) => {
+      const li = this._createMenuItem(item, collection, index, doc);
+      fragment.appendChild(li);
+    });
+    ul.appendChild(fragment);
+
+    return true;
+  }
+
+  _createMenuItem(item: TributeItem<T>, collection: Collection<T>, index: number, doc: Document) {
+    const li = doc.createElement('li');
+    li.setAttribute('data-index', index.toString());
+    if (item.original.disabled) {
+      li.setAttribute('data-disabled', 'true');
+    }
+    li.className = collection.itemClass;
+    if (this.selected === index) {
+      li.classList.add(collection.selectClass);
+    }
+    // remove all content in the li and append the content of menuItemTemplate
+    const menuItemDomOrString = collection.menuItemTemplate !== null ? collection.menuItemTemplate(item, this.tribute) : '';
+    if (menuItemDomOrString instanceof Element) {
+      li.innerHTML = '';
+      li.appendChild(menuItemDomOrString);
+    } else {
+      li.innerHTML = menuItemDomOrString;
+    }
+    return li;
   }
 }
 

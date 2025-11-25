@@ -1,4 +1,4 @@
-import { addHandler } from './helpers';
+import { addHandler, debounce } from './helpers';
 import type { ITribute } from './type';
 
 class TributeMenuEvents<T extends {}> {
@@ -10,26 +10,8 @@ class TributeMenuEvents<T extends {}> {
     this.removers = [];
   }
 
-  bind(menu: EventTarget) {
-    const menuContainerScrollEvent = this.debounce(
-      () => {
-        if (this.tribute.isActive) {
-          this.tribute.hideMenu();
-        }
-      },
-      10,
-      false,
-    );
-    const windowResizeEvent = this.debounce(
-      () => {
-        if (this.tribute.isActive) {
-          this.tribute.hideMenu();
-        }
-      },
-      10,
-      false,
-    );
-    const closeOnScrollEvent = this.debounce(
+  bind(_menu: EventTarget) {
+    const hideMenu = debounce(
       () => {
         if (this.tribute.isActive) {
           this.tribute.hideMenu();
@@ -40,22 +22,22 @@ class TributeMenuEvents<T extends {}> {
     );
 
     this.removers.push(addHandler(this.tribute.range.getDocument(), 'mousedown', (event: Event) => this.click(event), false));
-    this.removers.push(addHandler(window, 'resize', windowResizeEvent));
+    this.removers.push(addHandler(window, 'resize', hideMenu));
 
     if (this.tribute.closeOnScroll === true) {
-      this.removers.push(addHandler(window, 'scroll', closeOnScrollEvent));
+      this.removers.push(addHandler(window, 'scroll', hideMenu));
     } else if (this.tribute.closeOnScroll !== false) {
-      this.removers.push(addHandler(this.tribute.closeOnScroll, 'scroll', closeOnScrollEvent, false));
+      this.removers.push(addHandler(this.tribute.closeOnScroll, 'scroll', hideMenu, false));
     } else {
       if (this.tribute.menuContainer) {
-        this.removers.push(addHandler(this.tribute.menuContainer, 'scroll', menuContainerScrollEvent, false));
+        this.removers.push(addHandler(this.tribute.menuContainer, 'scroll', hideMenu, false));
       } else {
-        this.removers.push(addHandler(window, 'scroll', menuContainerScrollEvent));
+        this.removers.push(addHandler(window, 'scroll', hideMenu));
       }
     }
   }
 
-  unbind(menu: EventTarget) {
+  unbind(_menu: EventTarget) {
     for (const remover of this.removers) {
       remover();
     }
@@ -64,21 +46,13 @@ class TributeMenuEvents<T extends {}> {
   click(event: Event) {
     const element = event.target;
     const tribute = this.tribute;
-    if (!tribute.current || !(element instanceof Node)) return;
+    if (!tribute.current || !(element instanceof HTMLElement)) return;
 
     if (tribute.menu.element?.contains(element)) {
-      let li: Node | undefined | null = element;
       event.preventDefault();
       event.stopPropagation();
-      while (li.nodeName.toLowerCase() !== 'li') {
-        li = li.parentNode;
-        if (!li || li === tribute.menu.element) {
-          // When li === tribute.menu, it's either a click on the entire component or on the scrollbar (if visible)
-          li = undefined;
-          break;
-        }
-      }
 
+      const li = element.closest('li');
       if (!(li instanceof HTMLElement)) return;
 
       if (li.getAttribute('data-disabled') === 'true') {
@@ -90,7 +64,7 @@ class TributeMenuEvents<T extends {}> {
 
       const index = li.getAttribute('data-index');
       if (index !== null) {
-        tribute.selectItemAtIndex(index, event);
+        tribute.current.selectItemAtIndex(index, event);
       }
       tribute.hideMenu();
 
@@ -100,23 +74,6 @@ class TributeMenuEvents<T extends {}> {
     } else if (tribute.current.element && !tribute.current.externalTrigger) {
       setTimeout(() => tribute.hideMenu());
     }
-  }
-
-  debounce<F extends (...args: unknown[]) => unknown>(func: F, wait: number, immediate: boolean, ...args: Parameters<F>) {
-    let timeout: ReturnType<typeof setTimeout> | null;
-    return () => {
-      const context = this;
-      const later = () => {
-        timeout = null;
-        if (!immediate) func.apply(context, args);
-      };
-      const callNow = immediate && !timeout;
-      if (timeout !== null) {
-        clearTimeout(timeout);
-      }
-      timeout = setTimeout(later, wait);
-      if (callNow) func.apply(context, args);
-    };
   }
 }
 
