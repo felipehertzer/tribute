@@ -4,4 +4,4 @@
  **/
 import Tribute from './Tribute';
 export default Tribute;
-export { type TributeCollection, type TributeItem, type TributeArgument, type TributeTemplate, type Collection } from './type';
+export type { Collection, TributeArgument, TributeCollection, TributeItem, TributeTemplate } from './type';

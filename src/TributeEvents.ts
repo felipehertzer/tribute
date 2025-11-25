@@ -84,7 +84,7 @@ class TributeEvents<T extends {}> {
     }
     this.updateSelection(element);
 
-    const ignoredKeys = ['Escape', 'Meta', 'Alt', 'Control', 'Shift', 'CapsLock', 'Tab', 'Home', 'End', 'Delete'];
+    const ignoredKeys = ['Escape', 'Meta', 'Alt', 'Control', 'Shift', 'CapsLock', 'Tab', 'Home', 'End', 'Delete', 'Enter'];
     if (!event.key || ignoredKeys.includes(event.key)) return;
 
     if (!this.tribute.allowSpaces && this.tribute.hasTrailingSpace) {

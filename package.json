@@ -1,6 +1,6 @@
 {
   "name": "@felipehertzer/tributejs",
-  "version": "6.2.2",
+  "version": "6.2.5",
   "description": "Native ES6 @mentions",
   "exports": {
     ".": {
@@ -46,6 +46,7 @@
     "test": "web-test-runner --node-resolve --playwright --browsers chromium",
     "dagger": "dagger ./dagger.sh",
     "lint": "npx @biomejs/biome check",
+    "format": "npx @biomejs/biome format --write ./src",
     "release_note": "npx git-cliff --latest --strip header",
     "prepublishOnly": "npm run build"
   },

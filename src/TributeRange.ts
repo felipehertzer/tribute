@@ -657,6 +657,14 @@ class ContentEditableRangeHandler<T extends {}> extends BaseRangeHandler<T> {
     const selectedElem = node.anchorNode;
 
     if (selectedElem != null) {
+      let parent: Node | null = selectedElem;
+      if (parent.nodeType === Node.TEXT_NODE) {
+        parent = parent.parentNode;
+      }
+      if (parent instanceof HTMLElement && !parent.isContentEditable) {
+        return undefined;
+      }
+
       const workingNodeContent = selectedElem.textContent;
       const sel = this.range.getWindowSelection();
       if (sel === null) return;
