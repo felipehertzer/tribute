@@ -13,6 +13,7 @@ import type {
   ITributeMenu,
   ITributeRange,
   ITributeSearch,
+  JQueryLike,
   TributeArgument,
   TributeCollection,
   TributeElement,
@@ -126,7 +127,7 @@ class Tribute<T extends {}> implements ITribute<T> {
     });
   }
 
-  attach(el: TributeElement | JQuery<HTMLElement>): void {
+  attach(el: TributeElement | JQueryLike<HTMLElement>): void {
     // Check if it is a jQuery collection
     const _el = isJQuery<HTMLElement>(el) ? el.get() : el;
     if (!_el) {
@@ -218,7 +219,7 @@ class Tribute<T extends {}> implements ITribute<T> {
 
   append(collectionIndex: string, newValues: [], replace?: boolean): void {
     const index = Number.parseInt(collectionIndex, 10);
-    if (typeof index !== 'number') throw new Error('please provide an index for the collection to update.');
+    if (Number.isNaN(index)) throw new Error('please provide an index for the collection to update.');
 
     const collection = this.collection[index];
 
@@ -235,7 +236,7 @@ class Tribute<T extends {}> implements ITribute<T> {
     }
   }
 
-  detach(el: TributeElement): void {
+  detach(el: TributeElement | JQueryLike<HTMLElement>): void {
     if (!el) {
       throw new Error('[Tribute] Must pass in a DOM node or NodeList.');
     }
@@ -278,7 +279,7 @@ class Tribute<T extends {}> implements ITribute<T> {
         {
           ...collectionConfig,
           values: values,
-          selectTemplate: selectTemplate ? selectTemplate.bind(this) : (item?: TributeItem<T>) => defaultSelectTemplate(this.current, item),
+          selectTemplate: selectTemplate ? selectTemplate.bind(this) : this.defaultSelectTemplate.bind(this),
           menuItemTemplate: (menuItemTemplate || defaultMenuItemTemplate).bind(this),
           noMatchTemplate: this.createNoMatchTemplate(noMatchTemplate, noMatchTemplate),
         },
@@ -290,7 +291,7 @@ class Tribute<T extends {}> implements ITribute<T> {
       return collection.map((item) => ({
         ...collectionConfig,
         ...item,
-        selectTemplate: item.selectTemplate ? item.selectTemplate.bind(this) : (item?: TributeItem<T>) => defaultSelectTemplate(this.current, item),
+        selectTemplate: item.selectTemplate ? item.selectTemplate.bind(this) : this.defaultSelectTemplate.bind(this),
         menuItemTemplate: (item.menuItemTemplate || defaultMenuItemTemplate).bind(this),
         noMatchTemplate: this.createNoMatchTemplate(item.noMatchTemplate, noMatchTemplate),
       }));
@@ -313,6 +314,10 @@ class Tribute<T extends {}> implements ITribute<T> {
 
   static isContentEditable(element: HTMLElement) {
     return isNotTextAreaOrInput(element);
+  }
+
+  private defaultSelectTemplate(item?: TributeItem<T>): string {
+    return defaultSelectTemplate(this.current, item);
   }
 }
 

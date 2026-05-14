@@ -1,6 +1,6 @@
 {
   "name": "@felipehertzer/tributejs",
-  "version": "6.2.5",
+  "version": "6.2.6",
   "description": "Native ES6 @mentions",
   "exports": {
     ".": {
@@ -14,22 +14,22 @@
     "dist"
   ],
   "devDependencies": {
-    "@rollup/plugin-terser": "^0.4.4",
+    "@biomejs/biome": "^2.4.15",
+    "@rollup/plugin-terser": "^1.0.0",
     "@rollup/plugin-typescript": "^12.3.0",
-    "@types/jquery": "^3.5.33",
-    "@web/dev-server-esbuild": "^1.0.4",
+    "@web/dev-server-esbuild": "^1.0.5",
     "@web/test-runner": "^0.20.2",
     "@web/test-runner-commands": "^0.9.0",
     "@web/test-runner-playwright": "^0.11.1",
-    "chai": "^6.2.0",
-    "git-cliff": "^2.10.1",
-    "glob": "^11.0.3",
-    "rollup": "^4.52.5",
+    "chai": "^6.2.2",
+    "git-cliff": "^2.13.1",
+    "glob": "^13.0.6",
+    "rollup": "^4.60.3",
     "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-livereload": "^2.0.5",
     "rollup-plugin-serve": "^3.0.0",
     "tslib": "^2.8.1",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   },
   "overrides": {
     "playwright": "1.56.1",
@@ -44,9 +44,10 @@
     "start": "rollup -c -w",
     "clean": "node script/clean.js",
     "test": "web-test-runner --node-resolve --playwright --browsers chromium",
+    "test:coverage": "web-test-runner --node-resolve --playwright --browsers chromium --coverage",
     "dagger": "dagger ./dagger.sh",
-    "lint": "npx @biomejs/biome check",
-    "format": "npx @biomejs/biome format --write ./src",
+    "lint": "biome check",
+    "format": "biome format --write ./src",
     "release_note": "npx git-cliff --latest --strip header",
     "prepublishOnly": "npm run build"
   },

@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 try {
   for (const file of globSync(path.join(__dirname, '../dist/*'))) {
-    fs.rmSync(file, { force: true });
+    fs.rmSync(file, { force: true, recursive: true });
   }
   for (const file of globSync(path.join(__dirname, '../example/*.{mjs,css,map}'))) {
     fs.rmSync(file, { force: true });

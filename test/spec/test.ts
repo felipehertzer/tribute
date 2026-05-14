@@ -7,6 +7,23 @@ import { clearDom, createDomElement, fillIn, press, simulateElementScroll, simul
 
 import { attachTribute, detachTribute } from './utils/tribute-helpers';
 
+const placeCaretAtEnd = (element: HTMLElement) => {
+  element.focus();
+  if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+    const end = element.value.length;
+    element.setSelectionRange(end, end);
+    return;
+  }
+
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  range.collapse(false);
+
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+};
+
 describe('Tribute instantiation', () => {
   it('should not error in the base case from the README', () => {
     const options = [
@@ -140,6 +157,64 @@ describe('Tribute @mentions cases', () => {
         detachTribute(tribute, input.id);
       });
     });
+  });
+});
+
+describe('Tribute trigger activation', () => {
+  afterEach(() => {
+    clearDom();
+  });
+
+  const mergeTagCollection = {
+    trigger: '|',
+    allowSpaces: true,
+    searchOpts: { skip: true },
+    values: [
+      { key: 'Preferred Name', value: 'Preferred Name' },
+      { key: 'Publication', value: 'Publication' },
+    ],
+  };
+
+  it('opens the menu when the trigger is typed at the caret', async () => {
+    const input = createDomElement();
+    const tribute = attachTribute(mergeTagCollection, input.id);
+
+    await fillIn(input, '|');
+
+    const popupList = document.querySelectorAll('.tribute-container > ul > li');
+    expect(popupList.length).to.equal(2);
+
+    detachTribute(tribute, input.id);
+  });
+
+  it('does not reopen from an existing merge tag trigger when typing later in an input', async () => {
+    const input = createDomElement();
+    input.value = 'Hi |Preferred Name| ';
+    placeCaretAtEnd(input);
+
+    const tribute = attachTribute(mergeTagCollection, input.id);
+    await fillIn(input, 'x');
+
+    const popupList = document.querySelectorAll('.tribute-container > ul > li');
+    expect(popupList.length).to.equal(0);
+    expect(tribute.isActive).to.equal(false);
+
+    detachTribute(tribute, input.id);
+  });
+
+  it('does not reopen from an existing merge tag trigger when typing later in contenteditable', async () => {
+    const input = createDomElement('contenteditable');
+    input.innerHTML = 'Hi <span contenteditable="false">|Preferred Name|</span> ';
+
+    const tribute = attachTribute(mergeTagCollection, input.id);
+    placeCaretAtEnd(input);
+    await fillIn(input, 'x');
+
+    const popupList = document.querySelectorAll('.tribute-container > ul > li');
+    expect(popupList.length).to.equal(0);
+    expect(tribute.isActive).to.equal(false);
+
+    detachTribute(tribute, input.id);
   });
 });
 

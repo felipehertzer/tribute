@@ -15,12 +15,12 @@ export const createDomElement = (element = 'text') => {
 };
 
 export const clearDom = () => {
-  const wrapperDiv = document.querySelector('#tribute-wrapper-div');
-  if (wrapperDiv) {
+  const wrapperDivs = document.querySelectorAll('#tribute-wrapper-div');
+  for (const wrapperDiv of wrapperDivs) {
     wrapperDiv.parentNode.removeChild(wrapperDiv);
   }
-  const tributeContainer = document.querySelector('.tribute-container');
-  if (tributeContainer) {
+  const tributeContainers = document.querySelectorAll('.tribute-container');
+  for (const tributeContainer of tributeContainers) {
     tributeContainer.parentNode.removeChild(tributeContainer);
   }
 };

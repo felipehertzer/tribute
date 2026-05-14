@@ -1,5 +1,10 @@
 export type Collection<T extends {}> = TributeCollection<T> & TributeTemplate<T>;
 
+export type JQueryLike<TElement extends HTMLElement = HTMLElement> = {
+  jquery: unknown;
+  get(): TElement[];
+};
+
 export interface ITribute<T extends {}> {
   autocompleteMode: boolean;
   autocompleteSeparator: RegExp | null;

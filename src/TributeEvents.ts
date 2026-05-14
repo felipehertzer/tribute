@@ -1,8 +1,13 @@
 import { addHandler, isTextAreaOrInput } from './helpers';
-import type { ITribute } from './type';
+import type { ITribute, TriggerInfo } from './type';
 
 const hotkeys = ['tab', 'backspace', 'enter', 'escape', 'space', 'arrowup', 'arrowdown'] as const;
 type hotkeyType = (typeof hotkeys)[number];
+type ActiveTrigger = {
+  element?: HTMLElement;
+  position: number;
+  trigger: string;
+};
 
 class TributeEvents<T extends {}> {
   removers: (() => void)[];
@@ -10,6 +15,8 @@ class TributeEvents<T extends {}> {
   inputEvent: boolean;
   commandEvent?: boolean;
   compositionFilter: CompositionFilter;
+  activeTrigger?: ActiveTrigger;
+  triggerContinuation?: ActiveTrigger;
 
   constructor(tribute: ITribute<T>) {
     this.tribute = tribute;
@@ -123,7 +130,12 @@ class TributeEvents<T extends {}> {
         eventKeyPressed = true;
       }
 
-      return !eventKeyPressed;
+      const deactivate = !eventKeyPressed;
+      if (deactivate) {
+        this.triggerContinuation = this.activeTrigger;
+      }
+
+      return deactivate;
     }
 
     return false;
@@ -133,10 +145,39 @@ class TributeEvents<T extends {}> {
     const tribute = this.tribute;
     const info = tribute.range.getTriggerInfo(false, tribute.hasTrailingSpace, true, tribute.allowSpaces);
 
-    if (info?.mentionTriggerChar) {
+    if (!info?.mentionTriggerChar) {
+      this.triggerContinuation = undefined;
+      return undefined;
+    }
+
+    if (info.mentionText === '') {
+      this.activeTrigger = {
+        element: tribute.current.element,
+        position: info.mentionPosition,
+        trigger: info.mentionTriggerChar,
+      };
       return info.mentionTriggerChar.charCodeAt(0);
     }
+
+    if (this.isTriggerContinuation(info)) {
+      this.activeTrigger = this.triggerContinuation;
+      this.triggerContinuation = undefined;
+      return info.mentionTriggerChar.charCodeAt(0);
+    }
+
+    this.triggerContinuation = undefined;
     return undefined;
+  }
+
+  private isTriggerContinuation(info: TriggerInfo) {
+    const continuation = this.triggerContinuation;
+    if (!continuation) return false;
+
+    return (
+      continuation.element === this.tribute.current.element &&
+      continuation.trigger === info.mentionTriggerChar &&
+      continuation.position === info.mentionPosition
+    );
   }
 
   updateSelection(el: HTMLElement) {
@@ -170,13 +211,9 @@ class TributeEvents<T extends {}> {
         enter: (e: Event, _el: HTMLElement) => {
           // choose selection
           const filteredItems = this.tribute.current.filteredItems;
-          if (this.tribute.isActive && filteredItems && filteredItems.length) {
+          if (this.tribute.isActive && filteredItems?.length) {
             e.preventDefault();
             e.stopPropagation();
-
-            if (this.tribute.current.filteredItems?.length === 0) {
-              this.tribute.menu.unselect();
-            }
 
             setTimeout(() => {
               this.tribute.current.selectItemAtIndex(this.tribute.menu.selected.toString(), e);

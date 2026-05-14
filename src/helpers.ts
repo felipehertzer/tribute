@@ -1,3 +1,5 @@
+import type { JQueryLike } from './type';
+
 export function addHandler(element: EventTarget, ...args: [string, (event: Event) => void, boolean?]) {
   element.addEventListener(...args);
   return () => element.removeEventListener(...args);
@@ -31,11 +33,11 @@ export function debounce<F extends (...args: unknown[]) => void>(func: F, wait: 
   };
 }
 
-export function isJQuery<T>(element: unknown): element is JQuery<T> {
+export function isJQuery<T extends HTMLElement>(element: unknown): element is JQueryLike<T> {
   if (typeof element !== 'object' || element == null) {
     return false;
   }
-  return 'jquery' in element && typeof element.jquery !== 'undefined';
+  return 'jquery' in element && typeof element.jquery !== 'undefined' && 'get' in element && typeof element.get === 'function';
 }
 
 type Compact<T> = {
@@ -43,9 +45,13 @@ type Compact<T> = {
 };
 
 export function compactObject<T extends Record<string, unknown>>(args: T): Compact<T> {
-  const entries = Object.entries(args) as [keyof T, T[keyof T]][];
-  const filteredEntries = entries.filter(([, value]) => value !== undefined);
-  const compactArgs = Object.assign({}, ...filteredEntries.map(([k, v]) => ({ [k]: v }))) as Compact<T>;
+  const compactArgs: Partial<T> = {};
+  for (const key of Object.keys(args) as (keyof T)[]) {
+    const value = args[key];
+    if (value !== undefined) {
+      compactArgs[key] = value;
+    }
+  }
 
-  return compactArgs;
+  return compactArgs as Compact<T>;
 }
