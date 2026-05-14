@@ -1,10 +1,10 @@
 # Tribute
 
-![CI result](https://github.com/redmine-ui/tribute/actions/workflows/ci.yml/badge.svg)
+![CI result](https://github.com/felipehertzer/tribute/actions/workflows/ci.yml/badge.svg)
 
 A cross-browser `@mention` engine written in ES6, no dependencies. Tested in Firefox, Chrome
 
-@redmine-ui/tribute is a fork of the zurb/tribute. Some pull requests added from the original repo.
+@felipehertzer/tributejs is a fork of zurb/tribute, maintained at https://github.com/felipehertzer/tribute.
 
 - [Installing](#installing)
 - [Initializing](#initializing)
@@ -13,18 +13,18 @@ A cross-browser `@mention` engine written in ES6, no dependencies. Tested in Fir
 - [Tips](#tips)
 - [Framework Support](#framework-support)
 - [WYSIWYG Editor Support](#wysiwyg-editor-support)
-- [Example](https://redmine-ui.github.io/tribute/example/)
+- [Example](https://github.com/felipehertzer/tribute/tree/master/example/)
 
 ## Installing
 
-There are a few ways to install Tribute; as an [NPM Module](https://npmjs.com/package/@redmine-ui/tributejs), or by [downloading](https://github.com/redmine-ui/tribute/releases/latest/download/tribute.zip) from the Release page.
+There are a few ways to install Tribute; as an [NPM Module](https://npmjs.com/package/@felipehertzer/tributejs), or by [downloading](https://github.com/felipehertzer/tribute/archive/master.zip) the repository archive.
 
 ### NPM Module
 
 You can install Tribute by running:
 
 ```shell
-npm install @redmine-ui/tributejs
+npm install @felipehertzer/tributejs
 ```
 
 Or by adding Tribute to your `package.json` file.
@@ -32,15 +32,15 @@ Or by adding Tribute to your `package.json` file.
 Import into your ES6 code.
 
 ```js
-import Tribute from "@redmine-ui/tributejs.mjs";
+import Tribute from "@felipehertzer/tributejs";
 ```
 
 ### Download or Clone
 
-Or you can [download the repo](https://github.com/redmine-ui/tribute/archive/master.zip) or clone and build it localy with this command:
+Or you can [download the repo](https://github.com/felipehertzer/tribute/archive/master.zip) or clone and build it locally with this command:
 
 ```shell
-git clone https://github.com/redmine-ui/tribute.git
+git clone https://github.com/felipehertzer/tribute.git
 cd tribute
 npm install
 npm run build
