@@ -1,18 +1,34 @@
-name: dagger
-on: [push]
+name: CI
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  ci:
+  quality:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup dagger
-        uses: dagger/dagger-for-github@8.0.0
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          version: "latest"
-          cloud-token: ${{ secrets.DAGGER_CLOUD_TOKEN }}
-      - name: Run integration test
-        run: dagger ./dagger.sh
+          node-version: "24"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+      - name: Run quality and coverage gates
+        run: |
+          npm run lint
+          npm run test:coverage
+          npm run build

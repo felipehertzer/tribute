@@ -7,6 +7,8 @@ import { clearDom, createDomElement, fillIn, press, simulateElementScroll, simul
 
 import { attachTribute, detachTribute } from './utils/tribute-helpers';
 
+const delay = (ms = 0) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 const placeCaretAtEnd = (element: HTMLElement) => {
   element.focus();
   if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
@@ -1045,10 +1047,8 @@ describe('closeOnScroll tests', () => {
     expect(tribute.isActive).to.be.true;
     simulateElementScroll(window);
 
-    // Need a slight delay otherwise we'll check for the result to fast
-    setTimeout(() => {
-      expect(tribute.isActive).to.be.false;
-    }, 50);
+    await delay(50);
+    expect(tribute.isActive).to.be.false;
 
     detachTribute(tribute, input.id);
   });
@@ -1072,10 +1072,8 @@ describe('closeOnScroll tests', () => {
     expect(tribute.isActive).to.be.true;
     simulateElementScroll(container);
 
-    // Need a slight delay otherwise we'll check for the result to fast
-    setTimeout(() => {
-      expect(tribute.isActive).to.be.false;
-    }, 50);
+    await delay(50);
+    expect(tribute.isActive).to.be.false;
 
     detachTribute(tribute, input.id);
   });
@@ -1097,10 +1095,8 @@ describe('closeOnScroll tests', () => {
     expect(tribute.isActive).to.be.true;
     simulateElementScroll(window);
 
-    // Need a slight delay otherwise we'll check for the result to fast
-    setTimeout(() => {
-      expect(tribute.isActive).to.be.true;
-    }, 50);
+    await delay(50);
+    expect(tribute.isActive).to.be.true;
 
     detachTribute(tribute, input.id);
   });

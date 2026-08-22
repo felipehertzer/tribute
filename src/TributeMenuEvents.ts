@@ -28,12 +28,6 @@ class TributeMenuEvents<T extends {}> {
       this.removers.push(addHandler(window, 'scroll', hideMenu));
     } else if (this.tribute.closeOnScroll !== false) {
       this.removers.push(addHandler(this.tribute.closeOnScroll, 'scroll', hideMenu, false));
-    } else {
-      if (this.tribute.menuContainer) {
-        this.removers.push(addHandler(this.tribute.menuContainer, 'scroll', hideMenu, false));
-      } else {
-        this.removers.push(addHandler(window, 'scroll', hideMenu));
-      }
     }
   }
 
