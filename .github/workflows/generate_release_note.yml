@@ -6,24 +6,37 @@ on:
       - '*'
 permissions:
   contents: write
+  id-token: write
 jobs:
   release:
+    environment: npm
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: 'true'
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "24"
           cache: npm
+          registry-url: https://registry.npmjs.org
+      - name: Verify tag matches package version
+        run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
       - name: Install dependencies
-        run: npm install
-      - name: Generate Libraries
-        run: npm run build
+        run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verify package
+        run: |
+          npm audit --audit-level=high
+          npm run lint
+          npm run test:coverage
+          npm run build
+      - name: Publish npm package
+        run: npm publish --access public --provenance
       - name: Generate a changelog
         run: npx git-cliff --latest --strip header > ${{ github.workspace }}-CHANGELOG.txt
       - name: Archive Release
