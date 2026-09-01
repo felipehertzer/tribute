@@ -1,4 +1,4 @@
-import { sendKeys } from '@web/test-runner-commands';
+import { userEvent } from 'vitest/browser';
 
 export const createDomElement = (element = 'text') => {
   let elementToCreate = 'input';
@@ -27,15 +27,11 @@ export const clearDom = () => {
 
 export async function fillIn(input, text) {
   input.focus();
-  await sendKeys({
-    type: text,
-  });
+  await userEvent.type(input, text.replaceAll('{newline}', '{Enter}'));
 }
 
 export async function press(key) {
-  await sendKeys({
-    press: key,
-  });
+  await userEvent.keyboard(key.length === 1 ? key : `{${key}}`);
 }
 
 export const simulateMouseClick = (targetNode) => {

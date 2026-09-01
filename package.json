@@ -4,47 +4,47 @@
   "description": "Native ES6 @mentions",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/tribute.mjs",
-      "types": "./dist/index.d.ts"
-    }
+      "default": "./dist/tribute.mjs"
+    },
+    "./tribute.css": "./dist/tribute.css"
   },
   "type": "module",
+  "module": "./dist/tribute.mjs",
   "types": "./dist/index.d.ts",
+  "style": "./dist/tribute.css",
   "files": [
     "dist"
   ],
+  "packageManager": "npm@11.17.0",
   "devDependencies": {
-    "@biomejs/biome": "^2.4.15",
-    "@rollup/plugin-terser": "^1.0.0",
-    "@rollup/plugin-typescript": "^12.3.0",
-    "@web/dev-server-esbuild": "^2.0.0",
-    "@web/test-runner": "^1.0.0",
-    "@web/test-runner-commands": "^1.0.0",
-    "@web/test-runner-playwright": "^1.0.0",
+    "@biomejs/biome": "^2.5.11",
+    "@types/node": "^26.4.1",
+    "@vitest/browser-playwright": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.11",
     "chai": "^6.2.2",
     "git-cliff": "^2.13.1",
     "glob": "^13.0.6",
-    "rollup": "^4.60.3",
-    "rollup-plugin-copy": "^3.5.0",
-    "rollup-plugin-livereload": "^2.0.5",
-    "rollup-plugin-serve": "^3.0.0",
-    "tslib": "^2.8.1",
-    "typescript": "^6.0.3"
-  },
-  "overrides": {
-    "playwright": "1.62.1",
-    "playwright-core": "1.62.1"
+    "playwright": "^1.62.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/felipehertzer/tribute.git"
   },
   "scripts": {
-    "build": "rollup -c",
-    "start": "rollup -c -w",
+    "prebuild": "npm run clean",
+    "build": "npm run typecheck && vite build && vite build --mode minified && npm run build:types",
+    "build:types": "tsc --project tsconfig.build.json",
+    "typecheck": "tsc --noEmit && tsc --project tsconfig.node.json",
+    "start": "npm run build && vite --host 127.0.0.1 --open /example/",
     "clean": "node script/clean.js",
-    "test": "web-test-runner --node-resolve --playwright --browsers chromium",
-    "test:coverage": "web-test-runner --node-resolve --playwright --browsers chromium --coverage",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
     "dagger": "dagger ./dagger.sh",
     "lint": "biome check",
     "format": "biome format --write ./src",
