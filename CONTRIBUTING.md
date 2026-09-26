@@ -2,16 +2,16 @@
 
 We welcome contributions to Tribute. There are many areas where we would love to see community contributions that we have outlined below, but first, let's go over how to develop in Tribute.
 
-Install dependencies:
+Install dependencies with [Bun](https://bun.sh), the repository's package manager (`bun.lock` is the only lockfile):
 
 ```sh
-npm install
+bun install
 ```
 
-Run Rollup:
+Build and start the Vite development server:
 
 ```sh
-npm run start
+bun run start
 ```
 
 That's it! Now you can use the `example/index.html` to test out changes to the code base. All changes to `src` will recompile on the fly.
@@ -20,13 +20,15 @@ Once you have made your changes, feel free to submit a pull request.
 
 ## Testing
 
-We use [@web/test-runner](https://modern-web.dev/docs/test-runner/overview/)
+We use [Vitest](https://vitest.dev/) in browser mode with Playwright's Chromium.
 
-To run the tests type:
+To run the checks CI runs:
 
 ```
-npm run build
-npm run test
+bunx playwright install chromium
+bun run lint
+bun run test:coverage
+bun run build
 ```
 
 ## Contribution Ideas

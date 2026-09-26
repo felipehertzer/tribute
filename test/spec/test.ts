@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import Tribute from '../../src/index';
 import bigList from './utils/bigList.json' with { type: 'json' };

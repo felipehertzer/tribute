@@ -20,15 +20,17 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "24"
-          cache: npm
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.2"
       - name: Install locked dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: bunx playwright install --with-deps chromium
       - name: Audit dependencies
-        run: npm audit --audit-level=high
+        run: bun audit --audit-level=high
       - name: Run quality and coverage gates
         run: |
-          npm run lint
-          npm run test:coverage
-          npm run build
+          bun run lint
+          bun run test:coverage
+          bun run build

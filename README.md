@@ -37,13 +37,13 @@ import Tribute from "@felipehertzer/tributejs";
 
 ### Download or Clone
 
-Or you can [download the repo](https://github.com/felipehertzer/tribute/archive/master.zip) or clone and build it locally with this command:
+Or you can [download the repo](https://github.com/felipehertzer/tribute/archive/master.zip) or clone and build it locally with [Bun](https://bun.sh) (the repository's package manager):
 
 ```shell
 git clone https://github.com/felipehertzer/tribute.git
 cd tribute
-npm install
-npm run build
+bun install --frozen-lockfile
+bun run build
 ```
 
 You can then copy the files in the `dist` directory to your project.

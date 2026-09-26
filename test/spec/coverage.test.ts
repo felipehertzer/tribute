@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { debounce, isJQuery, isKeyOfObject } from '../../src/helpers';
 import Tribute from '../../src/index';
 import type { Collection } from '../../src/type';

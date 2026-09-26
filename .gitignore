@@ -9,3 +9,6 @@ dist/
 example/*.mjs
 example/*.map
 example/*.css
+
+# Vitest 5 artifact root (failure screenshots, attachments, blob/JSON/JUnit output)
+.vitest/

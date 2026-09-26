@@ -21,24 +21,29 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: "24"
-          cache: npm
           registry-url: https://registry.npmjs.org
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.2"
       - name: Verify tag matches package version
         run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: bunx playwright install --with-deps chromium
       - name: Verify package
         run: |
-          npm audit --audit-level=high
-          npm run lint
-          npm run test:coverage
-          npm run build
+          bun audit --audit-level=high
+          bun run lint
+          bun run test:coverage
+          bun run build
+      # The npm CLI is only the registry client here: it provides trusted
+      # publishing with provenance. Dependencies come from bun.lock.
       - name: Publish npm package
         run: npm publish --access public --provenance
       - name: Generate a changelog
-        run: npx git-cliff --latest --strip header > ${{ github.workspace }}-CHANGELOG.txt
+        run: bun run release_note > ${{ github.workspace }}-CHANGELOG.txt
       - name: Archive Release
         uses: thedoctor0/zip-release@0.7.6
         with:

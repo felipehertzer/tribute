@@ -1,6 +1,6 @@
 {
   "name": "@felipehertzer/tributejs",
-  "version": "6.2.7",
+  "version": "6.2.8",
   "description": "Native ES6 @mentions",
   "exports": {
     ".": {
@@ -17,30 +17,28 @@
   "files": [
     "dist"
   ],
-  "packageManager": "npm@11.17.0",
+  "packageManager": "bun@1.4.2",
   "devDependencies": {
-    "@biomejs/biome": "^2.5.12",
-    "@types/node": "^26.5.1",
-    "@vitest/browser-playwright": "^4.1.11",
-    "@vitest/coverage-v8": "^4.1.11",
-    "chai": "^6.2.2",
-    "git-cliff": "^2.13.1",
-    "glob": "^13.0.6",
+    "@biomejs/biome": "^2.5.14",
+    "@types/node": "^26.6.2",
+    "@vitest/browser-playwright": "^5.0.1",
+    "@vitest/coverage-v8": "^5.0.1",
+    "git-cliff": "^2.14.2",
     "playwright": "^1.63.0",
     "typescript": "^7.0.2",
-    "vite": "^8.2.2",
-    "vitest": "^4.1.11"
+    "vite": "^8.3.1",
+    "vitest": "^5.0.1"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/felipehertzer/tribute.git"
   },
   "scripts": {
-    "prebuild": "npm run clean",
-    "build": "npm run typecheck && vite build && vite build --mode minified && npm run build:types",
+    "prebuild": "bun run clean",
+    "build": "bun run typecheck && vite build && vite build --mode minified && bun run build:types",
     "build:types": "tsc --project tsconfig.build.json",
     "typecheck": "tsc --noEmit && tsc --project tsconfig.node.json",
-    "start": "npm run build && vite --host 127.0.0.1 --open /example/",
+    "start": "bun run build && vite --host 127.0.0.1 --open /example/",
     "clean": "node script/clean.js",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -48,8 +46,8 @@
     "dagger": "dagger ./dagger.sh",
     "lint": "biome check",
     "format": "biome format --write ./src",
-    "release_note": "npx git-cliff --latest --strip header",
-    "prepublishOnly": "npm run build"
+    "release_note": "git-cliff --latest --strip header",
+    "prepublishOnly": "bun run build"
   },
   "author": "Jordan Humphreys <jordan@zurb.com>",
   "license": "MIT"
