@@ -977,6 +977,28 @@ describe('Tribute disabled items cases', () => {
     expect(input.value).to.equal('@');
   });
 
+  it('should select the highlighted item before the next key is handled', async () => {
+    const input = createDomElement();
+
+    const collectionObject = {
+      selectTemplate: (item) => item.original.value,
+      values: [
+        { key: 'First item', value: 'First item' },
+        { key: 'Second item', value: 'Second item' },
+      ],
+    };
+
+    const tribute = attachTribute(collectionObject, input.id);
+    await fillIn(input, '@');
+
+    // The browser can dispatch the next key before any timer runs: the selection must be in place already.
+    input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, code: 'Enter', key: 'Enter' }));
+    expect(input.value).to.equal('First item ');
+    expect(tribute.isActive).to.equal(false);
+
+    detachTribute(tribute, input.id);
+  });
+
   it('should prevent selecting disabled items with the keyboard', async () => {
     const input = createDomElement();
 

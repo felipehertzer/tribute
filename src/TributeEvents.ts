@@ -215,10 +215,10 @@ class TributeEvents<T extends {}> {
             e.preventDefault();
             e.stopPropagation();
 
-            setTimeout(() => {
-              this.tribute.current.selectItemAtIndex(this.tribute.menu.selected.toString(), e);
-              this.tribute.hideMenu();
-            }, 0);
+            // Select now: a key typed straight after Enter (the browser handles input before timers) would otherwise
+            // land in the mention text and be replaced with it.
+            this.tribute.current.selectItemAtIndex(this.tribute.menu.selected.toString(), e);
+            this.tribute.hideMenu();
           }
         },
         escape: (e: Event, _el: HTMLElement) => {
