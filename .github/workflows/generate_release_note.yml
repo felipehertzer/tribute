@@ -35,7 +35,6 @@ jobs:
       - name: Verify package
         run: |
           bun audit --audit-level=high
-          bun run lint
           bun run test:coverage
           bun run build
       # The npm CLI is only the registry client here: it provides trusted

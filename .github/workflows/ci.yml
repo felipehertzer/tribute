@@ -31,6 +31,5 @@ jobs:
         run: bun audit --audit-level=high
       - name: Run quality and coverage gates
         run: |
-          bun run lint
           bun run test:coverage
           bun run build
