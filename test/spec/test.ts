@@ -868,12 +868,6 @@ describe('Multi-char tests', () => {
 
       detachTribute(tribute, input.id);
     });
-  });
-
-  describe('Tribute events', () => {
-    afterEach(() => {
-      clearDom();
-    });
 
     it('should raise tribute-active-false', async () => {
       const input = createDomElement();

@@ -32,7 +32,7 @@ Or by adding Tribute to your `package.json` file.
 Import into your ES6 code.
 
 ```js
-import Tribute from "@felipehertzer/tributejs";
+import Tribute from '@felipehertzer/tributejs';
 ```
 
 ### Download or Clone
@@ -68,9 +68,9 @@ There are two ways to initialize Tribute, by passing an array of "collections" o
 ```js
 const tribute = new Tribute({
   values: [
-    { key: "Phil Heartman", value: "pheartman" },
-    { key: "Gordon Ramsey", value: "gramsey" }
-  ]
+    { key: 'Phil Heartman', value: 'pheartman' },
+    { key: 'Gordon Ramsey', value: 'gramsey' },
+  ],
 });
 ```
 
@@ -78,7 +78,7 @@ You can pass multiple collections on initialization by passing in an array of co
 
 ```js
 const tribute = new Tribute({
-  collection: []
+  collection: [],
 });
 ```
 
@@ -211,7 +211,7 @@ The `lookup` column can also be passed a function to construct a string to query
 
 ```js
 {
-  lookup: (person, mentionText) => person.name + person.email
+  lookup: (person, mentionText) => person.name + person.email;
 }
 ```
 
@@ -225,7 +225,7 @@ Both the `selectTemplate` and the `menuItemTemplate` have access to the `item` o
   original: {
   } // your original object from values array
   score: 5;
-  string: "<span>J</span><span>o</span>rdan Hum<span>p</span>hreys";
+  string: '<span>J</span><span>o</span>rdan Hum<span>p</span>hreys';
 }
 ```
 
@@ -247,7 +247,7 @@ Both the selectTemplate and the menuItemTemplate can access the tribute instance
   selectTemplate: (item, tribute) => {
     console.log(tribute); // tribute instance
     '@' + item.original.value;
-  }
+  };
 }
 ```
 
@@ -265,9 +265,9 @@ Tribute can be manually triggered by calling an instances `showMenuForCollection
 Then you can bind a `mousedown` event to the anchor and call `showMenuForCollection`.
 
 ```js
-activateLink.addEventListener("mousedown", (e) => {
+activateLink.addEventListener('mousedown', (e) => {
   e.preventDefault();
-  const input = document.getElementById("test");
+  const input = document.getElementById('test');
 
   tribute.showMenuForCollection(input);
 });
@@ -286,15 +286,10 @@ You can bind to the `tribute-replaced` event to know when we have updated your t
 If your element has an ID of `myElement`:
 
 ```js
-document
-  .getElementById("myElement")
-  .addEventListener("tribute-replaced", (e) => {
-    console.log(
-      "Original event that triggered text replacement:",
-      e.detail.event
-    );
-    console.log("Matched item:", e.detail.item);
-  });
+document.getElementById('myElement').addEventListener('tribute-replaced', (e) => {
+  console.log('Original event that triggered text replacement:', e.detail.event);
+  console.log('Matched item:', e.detail.item);
+});
 ```
 
 ### No Match
@@ -304,11 +299,9 @@ You can bind to the `tribute-no-match` event to know when no match is found in y
 If your element has an ID of `myElement`:
 
 ```js
-document
-  .getElementById("myElement")
-  .addEventListener("tribute-no-match", (e) => {
-    console.log("No match found!");
-  });
+document.getElementById('myElement').addEventListener('tribute-no-match', (e) => {
+  console.log('No match found!');
+});
 ```
 
 ### Active State Detection
@@ -316,19 +309,15 @@ document
 You can bind to the `tribute-active-true` or `tribute-active-false` events to detect when the menu is open or closed respectively.
 
 ```js
-document
-  .getElementById("myElement")
-  .addEventListener("tribute-active-true", (e) => {
-    console.log("Menu opened!");
-  });
+document.getElementById('myElement').addEventListener('tribute-active-true', (e) => {
+  console.log('Menu opened!');
+});
 ```
 
 ```js
-document
-  .getElementById("myElement")
-  .addEventListener("tribute-active-false", (e) => {
-    console.log("Menu closed!");
-  });
+document.getElementById('myElement').addEventListener('tribute-active-false', (e) => {
+  console.log('Menu closed!');
+});
 ```
 
 ## Tips
@@ -341,8 +330,8 @@ You can update an instance of Tribute on the fly. If you have new data you want 
 
 ```js
 tribute.appendCurrent([
-  { name: "Howard Johnson", occupation: "Panda Wrangler", age: 27 },
-  { name: "Fluffy Croutons", occupation: "Crouton Fluffer", age: 32 }
+  { name: 'Howard Johnson', occupation: 'Panda Wrangler', age: 27 },
+  { name: 'Fluffy Croutons', occupation: 'Crouton Fluffer', age: 32 },
 ]);
 ```
 
@@ -352,8 +341,8 @@ You can also append new values to an arbitrary collection by passing an index to
 
 ```js
 tribute.append(2, [
-  { name: "Howard Johnson", occupation: "Panda Wrangler", age: 27 },
-  { name: "Fluffy Croutons", occupation: "Crouton Fluffer", age: 32 }
+  { name: 'Howard Johnson', occupation: 'Panda Wrangler', age: 27 },
+  { name: 'Fluffy Croutons', occupation: 'Crouton Fluffer', age: 32 },
 ]);
 ```
 
@@ -362,17 +351,24 @@ This will append the new values to the third collection.
 You can replace data as well by passing true in second parameter of `appendCurrent` and in third parameter of `append`.
 
 ```js
-tribute.appendCurrent([
-  { name: "Howard Johnson", occupation: "Panda Wrangler", age: 27 },
-  { name: "Fluffy Croutons", occupation: "Crouton Fluffer", age: 32 }
-], true);
+tribute.appendCurrent(
+  [
+    { name: 'Howard Johnson', occupation: 'Panda Wrangler', age: 27 },
+    { name: 'Fluffy Croutons', occupation: 'Crouton Fluffer', age: 32 },
+  ],
+  true,
+);
 ```
 
 ```js
-tribute.append(2, [
-  { name: "Howard Johnson", occupation: "Panda Wrangler", age: 27 },
-  { name: "Fluffy Croutons", occupation: "Crouton Fluffer", age: 32 }
-], true);
+tribute.append(
+  2,
+  [
+    { name: 'Howard Johnson', occupation: 'Panda Wrangler', age: 27 },
+    { name: 'Fluffy Croutons', occupation: 'Crouton Fluffer', age: 32 },
+  ],
+  true,
+);
 ```
 
 ### Programmatically detecting an active Tribute dropdown
@@ -381,7 +377,7 @@ If you need to know when Tribute is active you can access the `isActive` propert
 
 ```js
 if (tribute.isActive) {
-  console.log("Somebody is being mentioned!");
+  console.log('Somebody is being mentioned!');
 } else {
   console.log("Who's this guy talking to?");
 }
@@ -397,25 +393,19 @@ clickable _and_ fixes issues with matches being modifiable.
 const tribute = new Tribute({
   values: [
     {
-      key: "Jordan Humphreys",
-      value: "Jordan Humphreys",
-      email: "getstarted@zurb.com"
+      key: 'Jordan Humphreys',
+      value: 'Jordan Humphreys',
+      email: 'getstarted@zurb.com',
     },
     {
-      key: "Sir Walter Riley",
-      value: "Sir Walter Riley",
-      email: "getstarted+riley@zurb.com"
-    }
+      key: 'Sir Walter Riley',
+      value: 'Sir Walter Riley',
+      email: 'getstarted+riley@zurb.com',
+    },
   ],
   selectTemplate: (item) => {
-    return (
-      '<span contenteditable="false"><a href="http://zurb.com" target="_blank" title="' +
-      item.original.email +
-      '">' +
-      item.original.value +
-      "</a></span>"
-    );
-  }
+    return '<span contenteditable="false"><a href="http://zurb.com" target="_blank" title="' + item.original.email + '">' + item.original.value + '</a></span>';
+  },
 });
 ```
 
@@ -427,8 +417,8 @@ You can override the default `menuItemTemplate` with your own output on initiali
 {
   //..other config options
   menuItemTemplate: (item) => {
-    return '<img src="'+item.original.avatar_url + '">' + item.string;
-  }
+    return '<img src="' + item.original.avatar_url + '">' + item.string;
+  };
 }
 ```
 
@@ -439,7 +429,7 @@ Sometimes you may need to have the Tribute menu attach to a scrollable parent el
 ```js
 {
   //..other config options
-  menuContainer: document.getElementById("wrapper");
+  menuContainer: document.getElementById('wrapper');
 }
 ```
 
@@ -463,17 +453,17 @@ You would then define a function, in this case `remoteSearch`, that returns your
 
 ```js
 function remoteSearch(text, cb) {
-  const URL = "YOUR DATA ENDPOINT";
-  fetch(URL + "?q=" + text)
-    .then(res => {
+  const URL = 'YOUR DATA ENDPOINT';
+  fetch(URL + '?q=' + text)
+    .then((res) => {
       if (res.ok) {
         return res.json();
       }
       cb([]);
     })
-    .then(data => {
+    .then((data) => {
       cb(data);
-    })
+    });
 }
 ```
 
@@ -482,7 +472,7 @@ function remoteSearch(text, cb) {
 If you want the menu to not show when no match is found, you can set your `noMatchTemplate` config to the following:
 
 ```js
-noMatchTemplate: () => '<span style="visibility: hidden;"></span>'
+noMatchTemplate: () => '<span style="visibility: hidden;"></span>';
 ```
 
 ### Detaching Tribute instances
@@ -490,7 +480,7 @@ noMatchTemplate: () => '<span style="visibility: hidden;"></span>'
 When you want to remove Tribute from an element you can call `detach`.
 
 ```js
-tribute.detach(document.getElementById("caaanDo"));
+tribute.detach(document.getElementById('caaanDo'));
 ```
 
 This will remove all event listeners from the DOM that are associated with that element.
@@ -503,23 +493,23 @@ This example shows the usage of Tribute for autocompletion of variables:
 
 ```js
 const tribute = new Tribute({
-  trigger: "{{",
+  trigger: '{{',
   values: [
-    { key: "red", value: "#FF0000" },
-    { key: "green", value: "#00FF00" }
+    { key: 'red', value: '#FF0000' },
+    { key: 'green', value: '#00FF00' },
   ],
   selectTemplate: (item) => {
-    return "{{" + item.original.key + "}}";
+    return '{{' + item.original.key + '}}';
   },
   menuItemTemplate: (item) => {
-    return item.original.key + " = " + item.original.value;
-  }
+    return item.original.key + ' = ' + item.original.value;
+  },
 });
 ```
 
 ### Grouping values and disabling options
 
-You may provide `disabled` values which can't be selected.  You can use `disabled` items as headers to mimic the functionality of &lt;optgroup> elements in a &lt;select>.  To provide `disabled` items simply return an object that includes a `disabled` property set to `true`.  The menu items for those values will not be selectable with the mouse or keyboard.  If you wish to differentiate them visually, check for the `disabled` attribute in the menuItemTemplate.
+You may provide `disabled` values which can't be selected. You can use `disabled` items as headers to mimic the functionality of &lt;optgroup> elements in a &lt;select>. To provide `disabled` items simply return an object that includes a `disabled` property set to `true`. The menu items for those values will not be selectable with the mouse or keyboard. If you wish to differentiate them visually, check for the `disabled` attribute in the menuItemTemplate.
 
 ## Framework Support
 
