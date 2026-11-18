@@ -19,15 +19,15 @@
   ],
   "packageManager": "bun@1.4.4",
   "devDependencies": {
-    "@biomejs/biome": "^2.6.7",
+    "@biomejs/biome": "^2.6.8",
     "@types/node": "^26.6.6",
-    "@vitest/browser-playwright": "^5.1.0",
-    "@vitest/coverage-v8": "^5.1.0",
+    "@vitest/browser-playwright": "^5.1.1",
+    "@vitest/coverage-v8": "^5.1.1",
     "git-cliff": "^2.14.2",
-    "playwright": "^1.65.0",
+    "playwright": "^1.65.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   },
   "repository": {
     "type": "git",
